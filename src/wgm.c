@@ -77,6 +77,9 @@ static int wgm_run(int argc, char *argv[], struct wgm_ctx *ctx)
 			show_usage_peer(argv[0]);
 			return 1;
 		}
+
+		if (!strcmp(argv[2], "add"))
+			return wgm_peer_add(argc - 2, argv + 2, ctx);
 	}
 
 	printf("Error: unknown command: %s\n", argv[1]);
