@@ -44,7 +44,7 @@ static int wgm_parse_port(const char *port, uint16_t *value)
 
 	val = strtol(port, &endptr, 10);
 	if (*endptr != '\0' || val < 0 || val > UINT16_MAX) {
-		printf("Error: invalid port number: %s\n", port);
+		wgm_log_err("Error: invalid port number: %s\n", port);
 		return -1;
 	}
 
@@ -92,17 +92,17 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 	}
 
 	if (!(flags & WGM_IFACE_ARG_HAS_IFNAME)) {
-		printf("Error: missing interface name\n");
+		wgm_log_err("Error: missing interface name\n");
 		return -1;
 	}
 
 	if (!(flags & WGM_IFACE_ARG_HAS_LISTEN_PORT)) {
-		printf("Error: missing listen port\n");
+		wgm_log_err("Error: missing listen port\n");
 		return -1;
 	}
 
 	if (!(flags & WGM_IFACE_ARG_HAS_PRIVATE_KEY)) {
-		printf("Error: missing private key\n");
+		wgm_log_err("Error: missing private key\n");
 		return -1;
 	}
 
@@ -433,7 +433,7 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	ret = wgm_iface_load(ctx, &iface, arg.ifname);
 	if (!ret) {
 		if (!arg.force) {
-			printf("Error: interface already exists, use --force to force update\n");
+			wgm_log_err("Error: wgm_iface_add: interface already exists, use -f or --force to force update\n");
 			return -EEXIST;
 		}
 
@@ -573,7 +573,7 @@ void wgm_iface_dump_json(const struct wgm_iface *iface)
 {
 	char *jstr = wgm_iface_to_json_str(iface);
 	if (!jstr) {
-		printf("Error: wgm_iface_dump_json: failed to convert interface to JSON\n");
+		wgm_log_err("Error: wgm_iface_dump_json: failed to convert interface to JSON\n");
 		return;
 	}
 
