@@ -69,6 +69,10 @@ static int wgm_run(int argc, char *argv[], struct wgm_ctx *ctx)
 
 		if (!strcmp(argv[2], "add"))
 			return wgm_iface_add(argc - 2, argv + 2, ctx);
+
+
+		printf("Error: unknown command: iface %s\n", argv[2]);
+		return 1;
 	}
 
 	if (!strcmp(argv[1], "peer")) {
@@ -79,6 +83,9 @@ static int wgm_run(int argc, char *argv[], struct wgm_ctx *ctx)
 
 		if (!strcmp(argv[2], "add"))
 			return wgm_peer_add(argc - 2, argv + 2, ctx);
+
+		printf("Error: unknown command: peer %s\n", argv[2]);
+		return 1;
 	}
 
 	printf("Error: unknown command: %s\n", argv[1]);

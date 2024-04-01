@@ -11,13 +11,21 @@
 #include <stdbool.h>
 #include <arpa/inet.h>
 
+struct wgm_str_array {
+	char		**arr;
+	size_t		nr;
+};
+
 int mkdir_recursive(const char *path, mode_t mode);
 char *strncpyl(char *dest, const char *src, size_t n);
-int load_str_array_from_json(char ***array, uint16_t *nr, const json_object *jobj);
-void free_str_array(char **array, size_t nr);
-json_object *json_object_new_from_str_array(char **array, uint16_t nr);
+
+void wgm_log_err(const char *fmt, ...);
 
 int wgm_parse_ifname(const char *ifname, char *buf);
 int wgm_parse_key(const char *key, char *buf, size_t size);
+
+int wgm_str_array_to_json(const struct wgm_str_array *arr, json_object **jobj);
+int wgm_json_to_str_array(struct wgm_str_array *arr, json_object *jobj);
+void wgm_str_array_free(struct wgm_str_array *arr);
 
 #endif /* #ifndef WGM__HELPERS_H */

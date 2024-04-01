@@ -109,6 +109,45 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 	return 0;
 }
 
+static char *wgm_iface_to_json_str(const struct wgm_iface *iface)
+{
+	json_object *jobj, *tmp;
+	char *jstr;
+	int ret;
+
+	jobj = json_object_new_object();
+	if (!jobj)
+		return NULL;
+
+	tmp = json_object_new_string(iface->ifname);
+	json_object_object_add(jobj, "ifname", tmp);
+
+	tmp = json_object_new_int(iface->listen_port);
+	json_object_object_add(jobj, "listen_port", tmp);
+
+	tmp = json_object_new_string(iface->private_key);
+	json_object_object_add(jobj, "private_key", tmp);
+
+	ret = wgm_str_array_to_json(&iface->addresses, &tmp);
+	if (!ret)
+		json_object_object_add(jobj, "addresses", tmp);
+	else
+		wgm_log_err("Error: wgm_iface_to_json_str: failed to convert addresses to JSON\n");
+
+	ret = wgm_str_array_to_json(&iface->allowed_ips, &tmp);
+	if (!ret)
+		json_object_object_add(jobj, "allowed_ips", tmp);
+	else
+		wgm_log_err("Error: wgm_iface_to_json_str: failed to convert allowed IPs to JSON\n");
+
+	jstr = strdup(json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY));
+	if (!jstr)
+		wgm_log_err("Error: wgm_iface_to_json_str: failed to allocate memory\n");
+
+	json_object_put(jobj);
+	return jstr;
+}
+
 static int wgm_iface_load_from_json_str(struct wgm_iface *iface, const char *jstr)
 {
 	json_object *jobj, *tmp;
@@ -118,102 +157,56 @@ static int wgm_iface_load_from_json_str(struct wgm_iface *iface, const char *jst
 
 	jobj = json_tokener_parse(jstr);
 	if (!jobj) {
-		fprintf(stderr, "Error: failed to parse JSON\n");
+		wgm_log_err("Error: wgm_iface_load_from_json_str: failed to parse JSON object\n");
 		return -EINVAL;
 	}
 
+
 	tmp = json_object_object_get(jobj, "ifname");
 	if (!tmp || !json_object_is_type(tmp, json_type_string)) {
-		fprintf(stderr, "Error: missing or invalid 'ifname' field\n");
+		wgm_log_err("Error: wgm_iface_load_from_json_str: missing or invalid 'ifname' field\n");
 		ret = -EINVAL;
 		goto out;
 	}
-
 	tstr = json_object_get_string(tmp);
-	if (!tstr || strlen(tstr) >= IFNAMSIZ) {
-		fprintf(stderr, "Error: invalid 'ifname' field\n");
+	if (!tstr || strlen(tstr) >= sizeof(iface->ifname)) {
+		wgm_log_err("Error: wgm_iface_load_from_json_str: invalid 'ifname' field\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	strncpyl(iface->ifname, tstr, sizeof(iface->ifname));
 
-	strncpyl(iface->ifname, tstr, IFNAMSIZ);
 
 	tmp = json_object_object_get(jobj, "listen_port");
 	if (!tmp || !json_object_is_type(tmp, json_type_int)) {
-		fprintf(stderr, "Error: missing or invalid 'listen_port' field\n");
+		wgm_log_err("Error: wgm_iface_load_from_json_str: missing or invalid 'listen_port' field\n");
 		ret = -EINVAL;
 		goto out;
 	}
 
 	port = json_object_get_int(tmp);
 	if (port < 0 || port > 65535) {
-		fprintf(stderr, "Error: invalid 'listen_port' field\n");
+		wgm_log_err("Error: wgm_iface_load_from_json_str: invalid 'listen_port' field\n");
 		ret = -EINVAL;
 		goto out;
 	}
-
 	iface->listen_port = (uint16_t)port;
+
 
 	tmp = json_object_object_get(jobj, "private_key");
 	if (!tmp || !json_object_is_type(tmp, json_type_string)) {
-		fprintf(stderr, "Error: missing or invalid 'private_key' field\n");
+		wgm_log_err("Error: wgm_iface_load_from_json_str: missing or invalid 'private_key' field\n");
 		ret = -EINVAL;
 		goto out;
 	}
 
 	tstr = json_object_get_string(tmp);
 	if (!tstr || strlen(tstr) >= sizeof(iface->private_key)) {
-		fprintf(stderr, "Error: invalid 'private_key' field\n");
+		wgm_log_err("Error: wgm_iface_load_from_json_str: invalid 'private_key' field\n");
 		ret = -EINVAL;
 		goto out;
 	}
-
 	strncpyl(iface->private_key, tstr, sizeof(iface->private_key));
-
-	tmp = json_object_object_get(jobj, "addresses");
-	if (!tmp || !json_object_is_type(tmp, json_type_array)) {
-		fprintf(stderr, "Error: missing or invalid 'addresses' field\n");
-		ret = -EINVAL;
-		goto out;
-	}
-
-	ret = load_str_array_from_json(&iface->addresses, &iface->nr_addresses, tmp);
-	if (ret) {
-		fprintf(stderr, "Error: failed to load 'addresses' field\n");
-		goto out;
-	}
-
-	tmp = json_object_object_get(jobj, "allowed_ips");
-	if (!tmp || !json_object_is_type(tmp, json_type_array)) {
-		fprintf(stderr, "Error: missing or invalid 'allowed_ips' field\n");
-		free_str_array(iface->addresses, iface->nr_addresses);
-		ret = -EINVAL;
-		goto out;
-	}
-
-	ret = load_str_array_from_json(&iface->allowed_ips, &iface->nr_allowed_ips, tmp);
-	if (ret) {
-		fprintf(stderr, "Error: failed to load 'allowed_ips' field\n");
-		free_str_array(iface->addresses, iface->nr_addresses);
-		goto out;
-	}
-
-	tmp = json_object_object_get(jobj, "peers");
-	if (!tmp || !json_object_is_type(tmp, json_type_array)) {
-		fprintf(stderr, "Error: missing or invalid 'peers' field\n");
-		free_str_array(iface->addresses, iface->nr_addresses);
-		free_str_array(iface->allowed_ips, iface->nr_allowed_ips);
-		ret = -EINVAL;
-		goto out;
-	}
-
-	ret = wgm_peer_array_from_json(&iface->peers, &iface->nr_peers, tmp);
-	if (ret) {
-		fprintf(stderr, "Error: failed to load 'peers' field\n");
-		free_str_array(iface->addresses, iface->nr_addresses);
-		free_str_array(iface->allowed_ips, iface->nr_allowed_ips);
-		goto out;
-	}
 
 	ret = 0;
 out:
@@ -259,8 +252,8 @@ int wgm_iface_load(struct wgm_ctx *ctx, struct wgm_iface *iface, const char *ifn
 
 int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface)
 {
-	json_object *jobj, *tmp;
 	char path[8192];
+	char *jstr;
 	FILE *fp;
 	int ret;
 
@@ -277,36 +270,15 @@ int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface)
 		return ret;
 	}
 
-	jobj = json_object_new_object();
-	if (!jobj) {
-		fprintf(stderr, "Error: failed to create JSON object\n");
+	jstr = wgm_iface_to_json_str(iface);
+	if (!jstr) {
+		fclose(fp);
 		return -ENOMEM;
 	}
 
-	tmp = json_object_new_string(iface->ifname);
-	json_object_object_add(jobj, "ifname", tmp);
-
-	tmp = json_object_new_int(iface->listen_port);
-	json_object_object_add(jobj, "listen_port", tmp);
-
-	tmp = json_object_new_string(iface->private_key);
-	json_object_object_add(jobj, "private_key", tmp);
-
-	tmp = json_object_new_from_str_array(iface->addresses, iface->nr_addresses);
-	json_object_object_add(jobj, "addresses", tmp);
-
-	tmp = json_object_new_from_str_array(iface->allowed_ips, iface->nr_allowed_ips);
-	json_object_object_add(jobj, "allowed_ips", tmp);
-
-	tmp = wgm_peer_array_to_json(iface->peers, iface->nr_peers);
-	if (!tmp)
-		return -ENOMEM;
-	json_object_object_add(jobj, "peers", tmp);
-
-	fputs(json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY), fp);
+	fputs(jstr, fp);
 	fputc('\n', fp);
 	fclose(fp);
-	json_object_put(jobj);
 	return 0;
 }
 
@@ -316,11 +288,6 @@ int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx)
 	(void)argv;
 	(void)ctx;
 	return 0;
-}
-
-static int __wgm_iface_add(struct wgm_ctx *ctx, struct wgm_iface *iface)
-{
-	return wgm_iface_save(ctx, iface);
 }
 
 /*
@@ -355,45 +322,15 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 		return wgm_iface_update(argc, argv, ctx);
 	}
 
-	if (!arg.force && ret != -ENOENT)
-		return ret;
+	if (ret != -ENOENT) {
+		if (!arg.force)
+			return ret;
+
+		printf("Force flag is set, ignoring error...\n");
+	}
 
 	strncpyl(iface.ifname, arg.ifname, IFNAMSIZ);
 	iface.listen_port = arg.listen_port;
 	strncpyl(iface.private_key, arg.private_key, sizeof(iface.private_key));
-	return __wgm_iface_add(ctx, &iface);
-}
-
-void wgm_iface_dump(const struct wgm_iface *iface)
-{
-	size_t i;
-
-	printf("Interface: %s\n", iface->ifname);
-	printf("  Listen port: %u\n", iface->listen_port);
-	printf("  Private key: %s\n", iface->private_key);
-
-	printf("  Addresses:\n");
-	for (i = 0; i < iface->nr_addresses; i++)
-		printf("    %s\n", iface->addresses[i]);
-
-	printf("  Allowed IPs:\n");
-	for (i = 0; i < iface->nr_allowed_ips; i++)
-		printf("    %s\n", iface->allowed_ips[i]);
-
-	printf("  Peers:\n");
-	for (i = 0; i < iface->nr_peers; i++)
-		wgm_peer_dump(&iface->peers[i]);
-}
-
-void wgm_iface_free(struct wgm_iface *iface)
-{
-	size_t i;
-
-	free_str_array(iface->addresses, iface->nr_addresses);
-	free_str_array(iface->allowed_ips, iface->nr_allowed_ips);
-	for (i = 0; i < iface->nr_peers; i++)
-		wgm_peer_free(&iface->peers[i]);
-
-	free(iface->peers);
-	memset(iface, 0, sizeof(*iface));
+	return wgm_iface_save(ctx, &iface);
 }

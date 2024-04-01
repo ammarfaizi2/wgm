@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <json-c/json.h>
-
+#if 0
 static const char wgm_iface_opt_short[] = "i:p:a:b:h";
 static const struct option wgm_iface_opt_long[] = {
 	{"ifname",		required_argument,	NULL,	'i'},
@@ -70,23 +70,6 @@ static int wgm_peer_parse_args(int argc, char *argv[], struct wgm_peer_arg *arg)
 			return -EINVAL;
 		}
 	}
-
-	return 0;
-}
-
-static int wgm_peer_append(struct wgm_iface *iface, const struct wgm_peer *peer)
-{
-	struct wgm_peer *tmp;
-	size_t size;
-
-	size = sizeof(struct wgm_peer) * (iface->nr_peers + 1);
-	tmp = realloc(iface->peers, size);
-	if (!tmp)
-		return -ENOMEM;
-
-	iface->peers = tmp;
-	iface->peers[iface->nr_peers] = *peer;
-	iface->nr_peers++;
 
 	return 0;
 }
@@ -185,19 +168,6 @@ int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
 int wgm_peer_update(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	return 0;
-}
-
-void wgm_peer_dump(const struct wgm_peer *peer)
-{
-	size_t i;
-
-	printf("Peer:\n");
-	printf("  Public key: %s\n", peer->public_key);
-	printf("  Bind IP: %s\n", peer->bind_ip);
-
-	printf("  Allowed IPs:\n");
-	for (i = 0; i < peer->nr_allowed_ips; i++)
-		printf("    %s\n", peer->allowed_ips[i]);
 }
 
 json_object *wgm_peer_array_to_json(const struct wgm_peer *peers, uint16_t nr_peers)
@@ -311,5 +281,11 @@ int wgm_peer_array_from_json(struct wgm_peer **peers, uint16_t *nr_peers, json_o
 		}
 	}
 
+	return 0;
+}
+#endif
+
+int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
+{
 	return 0;
 }
