@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-#include "wg_peer.h"
+#include "wgm_peer.h"
 
 #include <errno.h>
 #include <getopt.h>
