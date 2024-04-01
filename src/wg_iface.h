@@ -2,6 +2,7 @@
 #ifndef WGM__WG_IFACE_H
 #define WGM__WG_IFACE_H
 
+#include "wgm.h"
 #include "helpers.h"
 
 #include <stdint.h>
@@ -28,6 +29,6 @@ struct wgm_iface_arg {
 	char		private_key[128];
 };
 
-int wgm_iface_add(int argc, char *argv[]);
+int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx);
 
 #endif /* #ifndef WGM__WG_IFACE_H */

@@ -31,13 +31,37 @@ static void show_usage_peer(const char *app)
 	printf("\n");
 }
 
-int main(int argc, char *argv[])
+static int wgm_init_ctx(struct wgm_ctx *ctx)
 {
-	if (argc == 1) {
-		fprintf(stderr, "Usage: %s <command> [options]\n", argv[0]);
-		return 1;
+	const char *data_dir = getenv("WGM_DIR");
+	int ret;
+
+	if (!data_dir)
+		data_dir = "./wgm_data";
+
+	ret = mkdir_recursive(data_dir, 0700);
+	if (ret < 0) {
+		fprintf(stderr, "Error: failed to create directory: %s: %s\n",
+			data_dir, strerror(-ret));
+		return ret;
 	}
 
+	ctx->data_dir = strdup(data_dir);
+	if (!ctx->data_dir) {
+		fprintf(stderr, "Error: failed to allocate memory\n");
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
+static void wgm_free_ctx(struct wgm_ctx *ctx)
+{
+	free(ctx->data_dir);
+}
+
+static int wgm_run(int argc, char *argv[], struct wgm_ctx *ctx)
+{
 	if (!strcmp(argv[1], "iface")) {
 		if (argc == 2) {
 			show_usage_iface(argv[0]);
@@ -45,7 +69,7 @@ int main(int argc, char *argv[])
 		}
 
 		if (!strcmp(argv[2], "add"))
-			return wgm_iface_add(argc - 2, argv + 2);
+			return wgm_iface_add(argc - 2, argv + 2, ctx);
 	}
 
 	if (!strcmp(argv[1], "peer")) {
@@ -57,4 +81,23 @@ int main(int argc, char *argv[])
 
 	printf("Error: unknown command: %s\n", argv[1]);
 	return 1;
+}
+
+int main(int argc, char *argv[])
+{
+	struct wgm_ctx ctx;
+	int ret;
+
+	if (argc == 1) {
+		fprintf(stderr, "Usage: %s <command> [options]\n", argv[0]);
+		return 1;
+	}
+
+	ret = wgm_init_ctx(&ctx);
+	if (ret)
+		return ret;
+
+	ret = wgm_run(argc, argv, &ctx);
+	wgm_free_ctx(&ctx);
+	return ret;
 }

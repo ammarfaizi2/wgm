@@ -4,4 +4,8 @@
 
 #include "helpers.h"
 
+struct wgm_ctx {
+	char	*data_dir;
+};
+
 #endif /* #ifndef WGM__WGM_H */

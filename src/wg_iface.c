@@ -2,10 +2,12 @@
 #include "wg_iface.h"
 #include "wg_peer.h"
 
+#include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <json-c/json.h>
 
 enum {
 	WGM_IFACE_ARG_HAS_IFNAME	= (1ull << 0ull),
@@ -13,7 +15,9 @@ enum {
 	WGM_IFACE_ARG_HAS_PRIVATE_KEY	= (1ull << 2ull),
 };
 
-static const struct option wgm_iface_options[] = {
+static const char wgm_iface_opt_short[] = "i:l:k:h";
+
+static const struct option wgm_iface_opt_long[] = {
 	{"ifname",		required_argument,	NULL,	'i'},
 	{"listen-port",		required_argument,	NULL,	'l'},
 	{"private-key",		required_argument,	NULL,	'k'},
@@ -98,7 +102,7 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 	int c;
 
 	while (1) {
-		c = getopt_long(argc, argv, "i:l:k:h", wgm_iface_options, NULL);
+		c = getopt_long(argc, argv, wgm_iface_opt_short, wgm_iface_opt_long, NULL);
 		if (c < 0)
 			break;
 
@@ -144,6 +148,138 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 	return 0;
 }
 
+static int wgm_load_iface_json_str(struct wgm_iface *iface, const char *jstr)
+{
+	json_object *jobj, *tmp;
+	const char *tstr;
+	int port;
+	int ret;
+
+	jobj = json_tokener_parse(jstr);
+	if (!jobj) {
+		fprintf(stderr, "Error: failed to parse JSON\n");
+		return -EINVAL;
+	}
+
+	tmp = json_object_object_get(jobj, "ifname");
+	if (!tmp || !json_object_is_type(tmp, json_type_string)) {
+		fprintf(stderr, "Error: missing or invalid 'ifname' field\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	tstr = json_object_get_string(tmp);
+	if (!tstr || strlen(tstr) >= IFNAMSIZ) {
+		fprintf(stderr, "Error: invalid 'ifname' field\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	strncpyl(iface->ifname, tstr, IFNAMSIZ);
+
+	tmp = json_object_object_get(jobj, "listen_port");
+	if (!tmp || !json_object_is_type(tmp, json_type_int)) {
+		fprintf(stderr, "Error: missing or invalid 'listen_port' field\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	port = json_object_get_int(tmp);
+	if (port < 0 || port > 65535) {
+		fprintf(stderr, "Error: invalid 'listen_port' field\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	iface->listen_port = (uint16_t)port;
+
+	tmp = json_object_object_get(jobj, "private_key");
+	if (!tmp || !json_object_is_type(tmp, json_type_string)) {
+		fprintf(stderr, "Error: missing or invalid 'private_key' field\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	tstr = json_object_get_string(tmp);
+	if (!tstr || strlen(tstr) >= sizeof(iface->private_key)) {
+		fprintf(stderr, "Error: invalid 'private_key' field\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	strncpyl(iface->private_key, tstr, sizeof(iface->private_key));
+
+	tmp = json_object_object_get(jobj, "addresses");
+	if (!tmp || !json_object_is_type(tmp, json_type_array)) {
+		fprintf(stderr, "Error: missing or invalid 'addresses' field\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	ret = load_str_array_from_json(&iface->addresses, &iface->nr_addresses, tmp);
+	if (ret) {
+		fprintf(stderr, "Error: failed to load 'addresses' field\n");
+		goto out;
+	}
+
+	tmp = json_object_object_get(jobj, "allowed_ips");
+	if (!tmp || !json_object_is_type(tmp, json_type_array)) {
+		fprintf(stderr, "Error: missing or invalid 'allowed_ips' field\n");
+		free_str_array(iface->addresses, iface->nr_addresses);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	ret = load_str_array_from_json(&iface->allowed_ips, &iface->nr_allowed_ips, tmp);
+	if (ret) {
+		fprintf(stderr, "Error: failed to load 'allowed_ips' field\n");
+		free_str_array(iface->addresses, iface->nr_addresses);
+		goto out;
+	}
+
+	ret = 0;
+out:
+	json_object_put(jobj);
+	return ret;
+}
+
+static int wgm_load_iface(struct wgm_ctx *ctx, struct wgm_iface *iface,
+			  const char *ifname)
+{
+	size_t len, read_ret;
+	char path[8192];
+	char *jstr;
+	FILE *fp;
+	int ret;
+
+	snprintf(path, sizeof(path), "%s/%s.json", ctx->data_dir, ifname);
+	fp = fopen(path, "rb");
+	if (!fp)
+		return -errno;
+
+	fseek(fp, 0, SEEK_END);
+	len = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	jstr = malloc(len + 1);
+	if (!jstr) {
+		fclose(fp);
+		return -ENOMEM;
+	}
+
+	read_ret = fread(jstr, 1, len, fp);
+	fclose(fp);
+	if (read_ret != len) {
+		free(jstr);
+		return -EIO;
+	}
+
+	jstr[len] = '\0';
+	ret = wgm_load_iface_json_str(iface, jstr);
+	free(jstr);
+	return ret;
+}
+
 /*
  * "iface add" rules:
  *
@@ -154,14 +290,16 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
  *   3) If the interface name already exists, it will try to update the
  *      listen port and private key.
  */
-int wgm_iface_add(int argc, char *argv[])
+int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
-	struct wgm_iface_arg iface;
+	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
 	int ret;
 
-	ret = wgm_create_getopt(argc, argv, &iface);
+	ret = wgm_create_getopt(argc, argv, &arg);
 	if (ret < 0)
 		return -1;
 
-	return 0;
+	ret = wgm_load_iface(ctx, &iface, arg.ifname);
+	return ret;
 }
