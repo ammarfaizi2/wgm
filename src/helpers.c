@@ -260,3 +260,14 @@ void wgm_str_array_free(struct wgm_str_array *arr)
 	free(arr->arr);
 	memset(arr, 0, sizeof(*arr));
 }
+
+void wgm_str_array_dump(const struct wgm_str_array *arr)
+{
+	size_t i;
+
+	if (!arr || !arr->arr)
+		return;
+
+	for (i = 0; i < arr->nr; i++)
+		printf("  %s\n", arr->arr[i]);
+}

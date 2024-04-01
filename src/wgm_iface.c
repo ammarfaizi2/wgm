@@ -319,6 +319,8 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 			return -EEXIST;
 		}
 
+		wgm_iface_dump(&iface);
+		wgm_iface_save(ctx, &iface);
 		return wgm_iface_update(argc, argv, ctx);
 	}
 
@@ -332,5 +334,29 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	strncpyl(iface.ifname, arg.ifname, IFNAMSIZ);
 	iface.listen_port = arg.listen_port;
 	strncpyl(iface.private_key, arg.private_key, sizeof(iface.private_key));
+	wgm_iface_dump(&iface);
 	return wgm_iface_save(ctx, &iface);
+}
+
+void wgm_iface_dump(const struct wgm_iface *iface)
+{
+	printf("Interface: %s\n", iface->ifname);
+	printf("  Listen port: %u\n", iface->listen_port);
+	printf("  Private key: %s\n", iface->private_key);
+	printf("  Addresses:\n");
+	wgm_str_array_dump(&iface->addresses);
+	printf("  Allowed IPs:\n");
+	wgm_str_array_dump(&iface->allowed_ips);
+	printf("  Peers:\n");
+	wgm_peer_array_dump(&iface->peers);
+}
+
+void wgm_peer_array_dump(const struct wgm_peer_array *peers)
+{
+	size_t i;
+
+	for (i = 0; i < peers->nr; i++) {
+		printf("  Peer %zu:\n", i);
+		wgm_peer_dump(&peers->peers[i]);
+	}
 }

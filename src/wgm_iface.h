@@ -38,6 +38,7 @@ int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_load(struct wgm_ctx *ctx, struct wgm_iface *iface, const char *ifname);
 int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface);
 
+void wgm_peer_array_dump(const struct wgm_peer_array *peers);
 void wgm_iface_dump(const struct wgm_iface *iface);
 void wgm_iface_free(struct wgm_iface *iface);
 

@@ -289,3 +289,12 @@ int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	return 0;
 }
+
+void wgm_peer_dump(const struct wgm_peer *peer)
+{
+	printf("Peer:\n");
+	printf("  Public key: %s\n", peer->public_key);
+	printf("  Bind IP: %s\n", peer->bind_ip);
+	printf("  Allowed IPs:\n");
+	wgm_str_array_dump(&peer->allowed_ips);
+}
