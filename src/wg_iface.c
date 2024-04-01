@@ -15,13 +15,14 @@ enum {
 	WGM_IFACE_ARG_HAS_PRIVATE_KEY	= (1ull << 2ull),
 };
 
-static const char wgm_iface_opt_short[] = "i:l:k:h";
+static const char wgm_iface_opt_short[] = "i:l:k:hf";
 
 static const struct option wgm_iface_opt_long[] = {
 	{"ifname",		required_argument,	NULL,	'i'},
 	{"listen-port",		required_argument,	NULL,	'l'},
 	{"private-key",		required_argument,	NULL,	'k'},
 	{"help",		no_argument,		NULL,	'h'},
+	{"force",		no_argument,		NULL,	'f'},
 	{NULL,			0,			NULL,	0},
 };
 
@@ -33,6 +34,7 @@ static void wgm_iface_add_help(const char *app)
 	printf("  -l, --listen-port=PORT\tListen port\n");
 	printf("  -k, --private-key=KEY\tPrivate key\n");
 	printf("  -h, --help\t\t\tDisplay this help\n");
+	printf("  -f, --force\t\t\tForce update if error or interface exists\n");
 }
 
 static int wgm_parse_ifname(const char *ifname, char *buf)
@@ -101,6 +103,8 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 	uint64_t flags = 0;
 	int c;
 
+	arg->force = false;
+
 	while (1) {
 		c = getopt_long(argc, argv, wgm_iface_opt_short, wgm_iface_opt_long, NULL);
 		if (c < 0)
@@ -121,6 +125,9 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 			if (wgm_parse_private_key(optarg, arg->private_key, sizeof(arg->private_key)) < 0)
 				return -1;
 			flags |= WGM_IFACE_ARG_HAS_PRIVATE_KEY;
+			break;
+		case 'f':
+			arg->force = true;
 			break;
 		case 'h':
 			wgm_iface_add_help(argv[0]);
@@ -280,6 +287,70 @@ static int wgm_load_iface(struct wgm_ctx *ctx, struct wgm_iface *iface,
 	return ret;
 }
 
+int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface)
+{
+	json_object *jobj, *tmp;
+	char path[8192];
+	FILE *fp;
+	int ret;
+
+	ret = snprintf(path, sizeof(path), "%s/%s.json", ctx->data_dir, iface->ifname);
+	if (ret > (int)sizeof(path)) {
+		fprintf(stderr, "Error: path is too long: %s\n", path);
+		return -ENAMETOOLONG;
+	}
+
+	fp = fopen(path, "wb");
+	if (!fp) {
+		ret = -errno;
+		fprintf(stderr, "Error: failed to open file: %s\n", path);
+		return ret;
+	}
+
+	jobj = json_object_new_object();
+	if (!jobj) {
+		fprintf(stderr, "Error: failed to create JSON object\n");
+		return -ENOMEM;
+	}
+
+	tmp = json_object_new_string(iface->ifname);
+	json_object_object_add(jobj, "ifname", tmp);
+
+	tmp = json_object_new_int(iface->listen_port);
+	json_object_object_add(jobj, "listen_port", tmp);
+
+	tmp = json_object_new_string(iface->private_key);
+	json_object_object_add(jobj, "private_key", tmp);
+
+	tmp = json_object_new_from_str_array(iface->addresses, iface->nr_addresses);
+	json_object_object_add(jobj, "addresses", tmp);
+
+	tmp = json_object_new_from_str_array(iface->allowed_ips, iface->nr_allowed_ips);
+	json_object_object_add(jobj, "allowed_ips", tmp);
+
+	tmp = json_object_new_array();
+	json_object_object_add(jobj, "peers", tmp);
+
+	fputs(json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY), fp);
+	fputc('\n', fp);
+	fclose(fp);
+	json_object_put(jobj);
+	return 0;
+}
+
+int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	(void)argc;
+	(void)argv;
+	(void)ctx;
+	return 0;
+}
+
+static int __wgm_iface_add(struct wgm_ctx *ctx, struct wgm_iface *iface)
+{
+	return wgm_iface_save(ctx, iface);
+}
+
 /*
  * "iface add" rules:
  *
@@ -296,10 +367,27 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	struct wgm_iface iface;
 	int ret;
 
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
 	ret = wgm_create_getopt(argc, argv, &arg);
 	if (ret < 0)
 		return -1;
 
 	ret = wgm_load_iface(ctx, &iface, arg.ifname);
-	return ret;
+	if (!ret) {
+		if (!arg.force) {
+			printf("Error: interface already exists, use --force to force update\n");
+			return -EEXIST;
+		}
+
+		return wgm_iface_update(argc, argv, ctx);
+	}
+
+	if (!arg.force && ret != -ENOENT)
+		return ret;
+
+	strncpyl(iface.ifname, arg.ifname, IFNAMSIZ);
+	iface.listen_port = arg.listen_port;
+	strncpyl(iface.private_key, arg.private_key, sizeof(iface.private_key));
+	return __wgm_iface_add(ctx, &iface);
 }

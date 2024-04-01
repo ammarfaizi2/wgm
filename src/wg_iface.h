@@ -24,11 +24,13 @@ struct wgm_iface {
 };
 
 struct wgm_iface_arg {
+	bool		force;
 	char		ifname[IFNAMSIZ];
 	uint16_t	listen_port;
-	char		private_key[128];
+	char		private_key[128];	
 };
 
 int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx);
 
 #endif /* #ifndef WGM__WG_IFACE_H */

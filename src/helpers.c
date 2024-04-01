@@ -109,3 +109,18 @@ void free_str_array(char **array, size_t nr)
 
 	free(array);
 }
+
+json_object *json_object_new_from_str_array(char **array, uint16_t nr)
+{
+	json_object *jobj;
+	size_t i;
+
+	jobj = json_object_new_array();
+	if (!jobj)
+		return NULL;
+
+	for (i = 0; i < nr; i++)
+		json_object_array_add(jobj, json_object_new_string(array[i]));
+
+	return jobj;
+}
