@@ -41,8 +41,7 @@ static int wgm_init_ctx(struct wgm_ctx *ctx)
 
 	ret = mkdir_recursive(data_dir, 0700);
 	if (ret < 0) {
-		fprintf(stderr, "Error: failed to create directory: %s: %s\n",
-			data_dir, strerror(-ret));
+		fprintf(stderr, "Error: failed to create directory: %s: %s\n", data_dir, strerror(-ret));
 		return ret;
 	}
 
