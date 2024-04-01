@@ -127,7 +127,7 @@ int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
 
 	ret = wgm_iface_load(ctx, &iface, arg.ifname);
 	if (ret < 0) {
-		printf("Error: wgm_peer_add: failed to load interface %s\n", arg.ifname);
+		printf("Error: wgm_peer_add: failed to load interface \"%s\": %s\n", arg.ifname, strerror(-ret));
 		return ret;
 	}
 
