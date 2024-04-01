@@ -205,7 +205,7 @@ int wgm_str_array_to_json(const struct wgm_str_array *arr, json_object **jobj)
 	return 0;
 }
 
-int wgm_json_to_str_array(struct wgm_str_array *arr, json_object *jobj)
+int wgm_json_to_str_array(struct wgm_str_array *arr, const json_object *jobj)
 {
 	size_t i;
 
@@ -270,4 +270,61 @@ void wgm_str_array_dump(const struct wgm_str_array *arr)
 
 	for (i = 0; i < arr->nr; i++)
 		printf("  %s\n", arr->arr[i]);
+}
+
+int wgm_parse_csv(struct wgm_str_array *arr, const char *str_ips)
+{
+	char *tmp, *p, **str_arr;
+	size_t i, n, len;
+	int ret;
+
+	memset(arr, 0, sizeof(*arr));
+	if (!str_ips)
+		return 0;
+
+	tmp = strdup(str_ips);
+	if (!tmp)
+		return -ENOMEM;
+
+	len = strlen(tmp);
+	n = 0;
+	for (i = 0; i < len; i++) {
+		if (tmp[i] == ',') {
+			n++;
+			tmp[i] = '\0';
+		}
+	}
+
+	n++;
+
+	str_arr = calloc(n, sizeof(char *));
+	if (!str_arr) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	p = tmp;
+
+	for (i = 0; i < n; i++) {
+		str_arr[i] = strdup(p);
+		if (!str_arr[i]) {
+			ret = -ENOMEM;
+			goto out;
+		}
+		p += strlen(p) + 1;
+	}
+
+	arr->arr = str_arr;
+	arr->nr = n;
+	ret = 0;
+
+out:
+	if (ret < 0) {
+		while (n--)
+			free(str_arr[n]);
+		free(str_arr);
+	}
+
+	free(tmp);
+	return ret;
 }

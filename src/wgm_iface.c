@@ -109,8 +109,45 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 	return 0;
 }
 
+int wgm_peer_array_to_json(const struct wgm_peer_array *peers, json_object **jobj)
+{
+	json_object *tmp;
+	size_t i;
+	int ret;
+
+	*jobj = json_object_new_array();
+	if (!*jobj)
+		return -ENOMEM;
+
+	for (i = 0; i < peers->nr; i++) {
+		tmp = json_object_new_object();
+		if (!tmp) {
+			ret = -ENOMEM;
+			goto out;
+		}
+
+		ret = wgm_peer_to_json(&peers->peers[i], &tmp);
+		if (ret) {
+			json_object_put(tmp);
+			goto out;
+		}
+
+		json_object_array_add(*jobj, tmp);
+	}
+
+	ret = 0;
+out:
+	if (ret) {
+		json_object_put(*jobj);
+		*jobj = NULL;
+	}
+
+	return ret;
+}
+
 static char *wgm_iface_to_json_str(const struct wgm_iface *iface)
 {
+	static const int json_flags = JSON_C_TO_STRING_NOSLASHESCAPE | JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY;
 	json_object *jobj, *tmp;
 	char *jstr;
 	int ret;
@@ -140,12 +177,62 @@ static char *wgm_iface_to_json_str(const struct wgm_iface *iface)
 	else
 		wgm_log_err("Error: wgm_iface_to_json_str: failed to convert allowed IPs to JSON\n");
 
-	jstr = strdup(json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY));
+	ret = wgm_peer_array_to_json(&iface->peers, &tmp);
+	if (!ret)
+		json_object_object_add(jobj, "peers", tmp);
+	else
+		wgm_log_err("Error: wgm_iface_to_json_str: failed to convert peers to JSON\n");
+
+	jstr = strdup(json_object_to_json_string_ext(jobj, json_flags));
 	if (!jstr)
 		wgm_log_err("Error: wgm_iface_to_json_str: failed to allocate memory\n");
 
 	json_object_put(jobj);
 	return jstr;
+}
+
+int wgm_json_to_peer_array(struct wgm_peer_array *peers, const json_object *jobj)
+{
+	json_object *tmp;
+	struct wgm_peer peer;
+	size_t i;
+	int ret;
+
+	memset(peers, 0, sizeof(*peers));
+	peers->nr = json_object_array_length(jobj);
+	if (!peers->nr)
+		return 0;
+
+	peers->peers = malloc(peers->nr * sizeof(*peers->peers));
+	if (!peers->peers)
+		return -ENOMEM;
+
+	for (i = 0; i < peers->nr; i++) {
+		tmp = json_object_array_get_idx(jobj, i);
+		if (!tmp) {
+			ret = -EINVAL;
+			goto out;
+		}
+
+		memset(&peer, 0, sizeof(peer));
+		ret = wgm_json_to_peer(&peer, tmp);
+		if (ret) {
+			wgm_log_err("Error: wgm_iface_json_to_peer_array: failed to convert JSON to peer\n");
+			goto out;
+		}
+
+		peers->peers[i] = peer;
+	}
+
+	return 0;
+
+out:
+	while (i > 0)
+		wgm_peer_free(&peers->peers[--i]);
+
+	free(peers->peers);
+	memset(peers, 0, sizeof(*peers));
+	return ret;
 }
 
 static int wgm_iface_load_from_json_str(struct wgm_iface *iface, const char *jstr)
@@ -207,6 +294,36 @@ static int wgm_iface_load_from_json_str(struct wgm_iface *iface, const char *jst
 		goto out;
 	}
 	strncpyl(iface->private_key, tstr, sizeof(iface->private_key));
+
+
+	tmp = json_object_object_get(jobj, "addresses");
+	if (tmp) {
+		ret = wgm_json_to_str_array(&iface->addresses, tmp);
+		if (ret) {
+			wgm_log_err("Error: wgm_iface_load_from_json_str: failed to convert 'addresses' to string array\n");
+			goto out;
+		}
+	}
+
+
+	tmp = json_object_object_get(jobj, "allowed_ips");
+	if (tmp) {
+		ret = wgm_json_to_str_array(&iface->allowed_ips, tmp);
+		if (ret) {
+			wgm_log_err("Error: wgm_iface_load_from_json_str: failed to convert 'allowed_ips' to string array\n");
+			goto out;
+		}
+	}
+
+
+	tmp = json_object_object_get(jobj, "peers");
+	if (tmp) {
+		ret = wgm_json_to_peer_array(&iface->peers, tmp);
+		if (ret) {
+			wgm_log_err("Error: wgm_iface_load_from_json_str: failed to convert 'peers' to peer array\n");
+			goto out;
+		}
+	}
 
 	ret = 0;
 out:
@@ -279,6 +396,7 @@ int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface)
 	fputs(jstr, fp);
 	fputc('\n', fp);
 	fclose(fp);
+	free(jstr);
 	return 0;
 }
 
@@ -363,7 +481,7 @@ void wgm_peer_array_dump(const struct wgm_peer_array *peers)
 	size_t i;
 
 	for (i = 0; i < peers->nr; i++) {
-		printf("  Peer %zu:\n", i);
+		printf("    Peer %zu:\n", i);
 		wgm_peer_dump(&peers->peers[i]);
 	}
 }
@@ -386,6 +504,14 @@ int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer)
 {
 	struct wgm_peer *tmp;
 	size_t i;
+
+	/*
+	 * If the peer already exists, return -EEXIST.
+	 */
+	for (i = 0; i < iface->peers.nr; i++) {
+		if (strcmp(iface->peers.peers[i].public_key, peer->public_key) == 0)
+			return -EEXIST;
+	}
 
 	tmp = realloc(iface->peers.peers, (iface->peers.nr + 1) * sizeof(*tmp));
 	if (!tmp)
@@ -441,4 +567,15 @@ int wgm_iface_update_peer(struct wgm_iface *iface, const struct wgm_peer *peer)
 	}
 
 	return -ENOENT;
+}
+
+void wgm_iface_dump_json(const struct wgm_iface *iface)
+{
+	char *jstr = wgm_iface_to_json_str(iface);
+	if (!jstr) {
+		printf("Error: wgm_iface_dump_json: failed to convert interface to JSON\n");
+		return;
+	}
+
+	printf("%s\n", jstr);
 }

@@ -18,6 +18,7 @@ struct wgm_peer_arg {
 	char		public_key[128];
 	char		*allowed_ips;	/* comma separated list */
 	char		bind_ip[INET6_ADDRSTRLEN];
+	bool		force;
 };
 
 int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx);
@@ -25,5 +26,8 @@ int wgm_peer_update(int argc, char *argv[], struct wgm_ctx *ctx);
 
 void wgm_peer_free(struct wgm_peer *peer);
 void wgm_peer_dump(const struct wgm_peer *peer);
+
+int wgm_peer_to_json(const struct wgm_peer *peer, json_object **obj);
+int wgm_json_to_peer(struct wgm_peer *peer, const json_object *obj);
 
 #endif /* #ifndef WGM__WG_PEER_H */

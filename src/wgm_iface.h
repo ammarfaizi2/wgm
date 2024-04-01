@@ -29,7 +29,9 @@ struct wgm_iface_arg {
 	bool		force;
 	char		ifname[IFNAMSIZ];
 	uint16_t	listen_port;
-	char		private_key[128];	
+	char		private_key[128];
+	struct wgm_str_array addresses;
+	struct wgm_str_array allowed_ips;
 };
 
 int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx);
@@ -45,6 +47,7 @@ int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface);
 void wgm_peer_array_free(struct wgm_peer_array *peers);
 void wgm_peer_array_dump(const struct wgm_peer_array *peers);
 void wgm_iface_dump(const struct wgm_iface *iface);
+void wgm_iface_dump_json(const struct wgm_iface *iface);
 void wgm_iface_free(struct wgm_iface *iface);
 
 #endif /* #ifndef WGM__WG_IFACE_H */

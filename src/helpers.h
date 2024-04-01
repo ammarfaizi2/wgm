@@ -25,9 +25,11 @@ int wgm_parse_ifname(const char *ifname, char *buf);
 int wgm_parse_key(const char *key, char *buf, size_t size);
 
 int wgm_str_array_to_json(const struct wgm_str_array *arr, json_object **jobj);
-int wgm_json_to_str_array(struct wgm_str_array *arr, json_object *jobj);
+int wgm_json_to_str_array(struct wgm_str_array *arr, const json_object *jobj);
 void wgm_str_array_free(struct wgm_str_array *arr);
 
 void wgm_str_array_dump(const struct wgm_str_array *arr);
+
+int wgm_parse_csv(struct wgm_str_array *arr, const char *str_ips);
 
 #endif /* #ifndef WGM__HELPERS_H */

@@ -9,13 +9,20 @@
 #include <stdlib.h>
 #include <json-c/json.h>
 
-static const char wgm_iface_opt_short[] = "i:p:a:b:h";
+enum {
+	WGM_PEER_ARG_HAS_IFNAME		= (1ull << 0ull),
+	WGM_PEER_ARG_HAS_PUBLIC_KEY	= (1ull << 1ull),
+	WGM_PEER_ARG_HAS_ALLOWED_IPS	= (1ull << 2ull),
+};
+
+static const char wgm_iface_opt_short[] = "i:p:a:b:hf";
 static const struct option wgm_iface_opt_long[] = {
 	{"ifname",		required_argument,	NULL,	'i'},
 	{"public-key",		required_argument,	NULL,	'p'},
 	{"allowed-ips",		required_argument,	NULL,	'a'},
 	{"bind-ip",		required_argument,	NULL,	'b'},
 	{"help",		no_argument,		NULL,	'h'},
+	{"force",		no_argument,		NULL,	'f'},
 	{NULL,			0,			NULL,	0},
 };
 
@@ -28,12 +35,16 @@ static void wgm_iface_add_help(const char *app)
 	printf("  -a, --allowed-ips=IPS\t\tAllowed IPs\n");
 	printf("  -b, --bind-ip=IP\t\tBind IP\n");
 	printf("  -h, --help\t\t\tDisplay this help\n");
+	printf("  -f, --force\t\t\tForce update\n");
 }
 
 static int wgm_peer_parse_args(int argc, char *argv[], struct wgm_peer_arg *arg)
 {
+	uint64_t flags = 0;
 	char tmp_ip[16];
 	int c;
+
+	arg->force = false;
 
 	while (1) {
 		c = getopt_long(argc, argv, wgm_iface_opt_short, wgm_iface_opt_long, NULL);
@@ -44,15 +55,18 @@ static int wgm_peer_parse_args(int argc, char *argv[], struct wgm_peer_arg *arg)
 		case 'i':
 			if (wgm_parse_ifname(optarg, arg->ifname))
 				return -EINVAL;
+			flags |= WGM_PEER_ARG_HAS_IFNAME;
 			break;
 		case 'p':
 			if (wgm_parse_key(optarg, arg->public_key, sizeof(arg->public_key)) < 0)
 				return -EINVAL;
+			flags |= WGM_PEER_ARG_HAS_PUBLIC_KEY;
 			break;
 		case 'a':
 			arg->allowed_ips = strdup(optarg);
 			if (!arg->allowed_ips)
 				return -ENOMEM;
+			flags |= WGM_PEER_ARG_HAS_ALLOWED_IPS;
 			break;
 		case 'b':
 			if (inet_pton(AF_INET, optarg, tmp_ip) <= 0) {
@@ -63,6 +77,9 @@ static int wgm_peer_parse_args(int argc, char *argv[], struct wgm_peer_arg *arg)
 			}
 			strncpyl(arg->bind_ip, optarg, sizeof(arg->bind_ip));
 			break;
+		case 'f':
+			arg->force = true;
+			break;
 		case 'h':
 			wgm_iface_add_help(argv[0]);
 			return -1;
@@ -71,59 +88,26 @@ static int wgm_peer_parse_args(int argc, char *argv[], struct wgm_peer_arg *arg)
 		}
 	}
 
+	if (!(flags & WGM_PEER_ARG_HAS_IFNAME)) {
+		printf("Error: wgm_peer_parse_args: missing interface name argument\n\n");
+		goto err;
+	}
+
+	if (!(flags & WGM_PEER_ARG_HAS_PUBLIC_KEY)) {
+		printf("Error: wgm_peer_parse_args: missing public key argument\n\n");
+		goto err;
+	}
+
+	if (!(flags & WGM_PEER_ARG_HAS_ALLOWED_IPS)) {
+		printf("Error: wgm_peer_parse_args: missing allowed IPs argument\n\n");
+		goto err;
+	}
+
 	return 0;
-}
 
-static int wgm_parse_allowed_ips(const char *str_ips, struct wgm_str_array *arr)
-{
-	char *tmp, *p, **str_arr;
-	size_t i, n, len;
-	int ret;
-
-	memset(arr, 0, sizeof(*arr));
-	tmp = strdup(str_ips);
-	if (!tmp)
-		return -ENOMEM;
-
-	len = strlen(tmp);
-	n = 0;
-	for (i = 0; i < len; i++) {
-		if (tmp[i] == ',') {
-			n++;
-			tmp[i] = '\0';
-		}
-	}
-
-	n++;
-
-	str_arr = calloc(n, sizeof(char *));
-	if (!str_arr) {
-		ret = -ENOMEM;
-		goto out;
-	}
-
-	p = tmp;
-
-	for (i = 0; i < n; i++) {
-		str_arr[i] = strdup(p);
-		if (!str_arr[i]) {
-			ret = -ENOMEM;
-			goto out;
-		}
-		p += strlen(p) + 1;
-	}
-
-	arr->arr = str_arr;
-	arr->nr = n;
-	ret = 0;
-
-out:
-	if (ret < 0) {
-		wgm_str_array_free(arr);
-	}
-
-	free(tmp);
-	return ret;
+err:
+	wgm_iface_add_help(argv[0]);
+	return -EINVAL;
 }
 
 int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
@@ -143,13 +127,13 @@ int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
 
 	ret = wgm_iface_load(ctx, &iface, arg.ifname);
 	if (ret < 0) {
-		printf("Error: failed to load interface %s\n", arg.ifname);
+		printf("Error: wgm_peer_add: failed to load interface %s\n", arg.ifname);
 		return ret;
 	}
 
-	ret = wgm_parse_allowed_ips(arg.allowed_ips, &peer.allowed_ips);
+	ret = wgm_parse_csv(&peer.allowed_ips, arg.allowed_ips);
 	if (ret < 0) {
-		printf("Error: failed to parse allowed IPs\n");
+		printf("Error: wgm_peer_add: failed to parse allowed IPs\n");
 		return ret;
 	}
 
@@ -158,11 +142,24 @@ int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
 
 	ret = wgm_iface_add_peer(&iface, &peer);
 	if (ret < 0) {
-		printf("Error: failed to append peer\n");
-		return ret;
+		if (ret != -EEXIST) {
+			printf("Error: wgm_peer_add: failed to add peer (to iface)\n");
+			return ret;
+		}
+
+		if (!arg.force) {
+			printf("Error: peer already exists, use --force to force update\n");
+			return -EEXIST;
+		}
+
+		ret = wgm_iface_update_peer(&iface, &peer);
+		if (ret < 0) {
+			printf("Error: wgm_peer_add: failed to update peer (in iface)\n");
+			return ret;
+		}
 	}
 
-	wgm_iface_dump(&iface);
+	wgm_iface_dump_json(&iface);
 	ret = wgm_iface_save(ctx, &iface);
 	wgm_iface_free(&iface);
 	return ret;
@@ -181,9 +178,114 @@ void wgm_peer_free(struct wgm_peer *peer)
 
 void wgm_peer_dump(const struct wgm_peer *peer)
 {
-	printf("Peer:\n");
-	printf("  Public key: %s\n", peer->public_key);
-	printf("  Bind IP: %s\n", peer->bind_ip);
-	printf("  Allowed IPs:\n");
+	printf("      Public key: %s\n", peer->public_key);
+	printf("      Bind IP: %s\n", peer->bind_ip);
+	printf("      Allowed IPs:\n");
 	wgm_str_array_dump(&peer->allowed_ips);
+}
+
+int wgm_peer_to_json(const struct wgm_peer *peer, json_object **obj)
+{
+	json_object *jobj, *tmp;
+	int ret;
+
+	jobj = json_object_new_object();
+	if (!jobj)
+		return -ENOMEM;
+
+	tmp = json_object_new_string(peer->public_key);
+	if (!tmp) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	ret = json_object_object_add(jobj, "public_key", tmp);
+	if (ret < 0) {
+		json_object_put(tmp);
+		goto out;
+	}
+
+	tmp = json_object_new_string(peer->bind_ip);
+	if (!tmp) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	ret = json_object_object_add(jobj, "bind_ip", tmp);
+	if (ret < 0) {
+		json_object_put(tmp);
+		goto out;
+	}
+
+	ret = wgm_str_array_to_json(&peer->allowed_ips, &tmp);
+	if (ret < 0)
+		goto out;
+
+	ret = json_object_object_add(jobj, "allowed_ips", tmp);
+	if (ret < 0) {
+		json_object_put(tmp);
+		goto out;
+	}
+
+	*obj = jobj;
+	return 0;
+
+out:
+	json_object_put(jobj);
+	return ret;
+}
+
+int wgm_json_to_peer(struct wgm_peer *peer, const json_object *obj)
+{
+	json_object *tmp;
+	const char *tstr;
+
+	if (!json_object_object_get_ex(obj, "public_key", &tmp)) {
+		printf("Error: wgm_json_to_peer: missing public key\n");
+		return -EINVAL;
+	}
+
+	if (!tmp || !json_object_is_type(tmp, json_type_string)) {
+		printf("Error: wgm_json_to_peer: invalid public key\n");
+		return -EINVAL;
+	}
+
+	tstr = json_object_get_string(tmp);
+	if (!tstr || strlen(tstr) >= sizeof(peer->public_key)) {
+		printf("Error: wgm_json_to_peer: invalid public key\n");
+		return -EINVAL;
+	}
+
+	strncpy(peer->public_key, tstr, sizeof(peer->public_key));
+
+	if (!json_object_object_get_ex(obj, "bind_ip", &tmp)) {
+		printf("Error: wgm_json_to_peer: missing bind IP\n");
+		return -EINVAL;
+	}
+
+	if (!tmp || !json_object_is_type(tmp, json_type_string)) {
+		printf("Error: wgm_json_to_peer: invalid bind IP\n");
+		return -EINVAL;
+	}
+
+	tstr = json_object_get_string(tmp);
+	if (!tstr || strlen(tstr) >= sizeof(peer->bind_ip)) {
+		printf("Error: wgm_json_to_peer: invalid bind IP\n");
+		return -EINVAL;
+	}
+
+	strncpy(peer->bind_ip, tstr, sizeof(peer->bind_ip));
+
+	if (!json_object_object_get_ex(obj, "allowed_ips", &tmp)) {
+		printf("Error: wgm_json_to_peer: missing allowed IPs\n");
+		return -EINVAL;
+	}
+
+	if (!tmp || !json_object_is_type(tmp, json_type_array)) {
+		printf("Error: wgm_json_to_peer: invalid allowed IPs\n");
+		return -EINVAL;
+	}
+
+	wgm_str_array_free(&peer->allowed_ips);
+	return wgm_json_to_str_array(&peer->allowed_ips, tmp);
 }
