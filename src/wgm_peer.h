@@ -23,6 +23,7 @@ struct wgm_peer_arg {
 int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_peer_update(int argc, char *argv[], struct wgm_ctx *ctx);
 
+void wgm_peer_free(struct wgm_peer *peer);
 void wgm_peer_dump(const struct wgm_peer *peer);
 
 #endif /* #ifndef WGM__WG_PEER_H */

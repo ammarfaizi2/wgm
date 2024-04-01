@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <json-c/json.h>
-#if 0
+
 static const char wgm_iface_opt_short[] = "i:p:a:b:h";
 static const struct option wgm_iface_opt_long[] = {
 	{"ifname",		required_argument,	NULL,	'i'},
@@ -74,53 +74,56 @@ static int wgm_peer_parse_args(int argc, char *argv[], struct wgm_peer_arg *arg)
 	return 0;
 }
 
-static int wgm_parse_allowed_ips(const char *str_ips, char ***allowed_ips, uint16_t *nr_allowed_ips)
+static int wgm_parse_allowed_ips(const char *str_ips, struct wgm_str_array *arr)
 {
-	size_t i;
-	char **arr;
-	char *tmp;
+	char *tmp, *p, **str_arr;
+	size_t i, n, len;
+	int ret;
 
-	*nr_allowed_ips = 0;
-	*allowed_ips = NULL;
-
-	if (!str_ips)
-		return 0;
-
+	memset(arr, 0, sizeof(*arr));
 	tmp = strdup(str_ips);
 	if (!tmp)
 		return -ENOMEM;
 
-	for (i = 0; i < strlen(tmp); i++) {
+	len = strlen(tmp);
+	n = 0;
+	for (i = 0; i < len; i++) {
 		if (tmp[i] == ',') {
+			n++;
 			tmp[i] = '\0';
-			(*nr_allowed_ips)++;
 		}
 	}
 
-	(*nr_allowed_ips)++;
-	arr = calloc(*nr_allowed_ips, sizeof(char *));
-	if (!arr) {
-		free(tmp);
-		return -ENOMEM;
+	n++;
+
+	str_arr = calloc(n, sizeof(char *));
+	if (!str_arr) {
+		ret = -ENOMEM;
+		goto out;
 	}
 
-	for (i = 0; i < *nr_allowed_ips; i++) {
-		arr[i] = strdup(tmp);
-		if (!arr[i]) {
-			while (i--)
-				free(arr[i]);
-			free(arr);
-			free(tmp);
-			return -ENOMEM;
+	p = tmp;
+
+	for (i = 0; i < n; i++) {
+		str_arr[i] = strdup(p);
+		if (!str_arr[i]) {
+			ret = -ENOMEM;
+			goto out;
 		}
-
-		tmp += strlen(tmp) + 1;
+		p += strlen(p) + 1;
 	}
 
-	*allowed_ips = arr;
+	arr->arr = str_arr;
+	arr->nr = n;
+	ret = 0;
+
+out:
+	if (ret < 0) {
+		wgm_str_array_free(arr);
+	}
+
 	free(tmp);
-
-	return 0;
+	return ret;
 }
 
 int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
@@ -144,7 +147,7 @@ int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
 		return ret;
 	}
 
-	ret = wgm_parse_allowed_ips(arg.allowed_ips, &peer.allowed_ips, &peer.nr_allowed_ips);
+	ret = wgm_parse_allowed_ips(arg.allowed_ips, &peer.allowed_ips);
 	if (ret < 0) {
 		printf("Error: failed to parse allowed IPs\n");
 		return ret;
@@ -153,7 +156,7 @@ int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	strncpyl(peer.public_key, arg.public_key, sizeof(peer.public_key));
 	strncpyl(peer.bind_ip, arg.bind_ip, sizeof(peer.bind_ip));
 
-	ret = wgm_peer_append(&iface, &peer);
+	ret = wgm_iface_add_peer(&iface, &peer);
 	if (ret < 0) {
 		printf("Error: failed to append peer\n");
 		return ret;
@@ -170,124 +173,10 @@ int wgm_peer_update(int argc, char *argv[], struct wgm_ctx *ctx)
 	return 0;
 }
 
-json_object *wgm_peer_array_to_json(const struct wgm_peer *peers, uint16_t nr_peers)
-{
-	json_object *jarr;
-	size_t i;
-
-	jarr = json_object_new_array();
-	if (!jarr)
-		return NULL;
-
-	for (i = 0; i < nr_peers; i++) {
-		json_object *jpeer, *tmp;
-
-		jpeer = json_object_new_object();
-		if (!jpeer) {
-			json_object_put(jarr);
-			return NULL;
-		}
-
-		json_object_object_add(jpeer, "public_key", json_object_new_string(peers[i].public_key));
-		json_object_object_add(jpeer, "bind_ip", json_object_new_string(peers[i].bind_ip));
-		tmp = json_object_new_from_str_array(peers[i].allowed_ips, peers[i].nr_allowed_ips);
-		json_object_object_add(jpeer, "allowed_ips", tmp);
-
-		json_object_array_add(jarr, jpeer);
-	}
-
-	return jarr;
-}
-
 void wgm_peer_free(struct wgm_peer *peer)
 {
-	free_str_array(peer->allowed_ips, peer->nr_allowed_ips);
+	wgm_str_array_free(&peer->allowed_ips);
 	memset(peer, 0, sizeof(*peer));
-}
-
-int wgm_peer_from_json(struct wgm_peer *peer, json_object *jobj)
-{
-	json_object *jtmp;
-	const char *str;
-	int ret;
-
-	ret = json_object_object_get_ex(jobj, "public_key", &jtmp);
-	if (!ret) {
-		printf("Error: missing 'public_key' field\n");
-		return -EINVAL;
-	}
-
-	str = json_object_get_string(jtmp);
-	if (!str || strlen(str) >= sizeof(peer->public_key)) {
-		printf("Error: invalid 'public_key' field\n");
-		return -EINVAL;
-	}
-
-	strncpyl(peer->public_key, str, sizeof(peer->public_key));
-
-	ret = json_object_object_get_ex(jobj, "bind_ip", &jtmp);
-	if (!ret) {
-		printf("Error: missing 'bind_ip' field\n");
-		return -EINVAL;
-	}
-
-	str = json_object_get_string(jtmp);
-
-	if (inet_pton(AF_INET, str, peer->bind_ip) <= 0) {
-		if (inet_pton(AF_INET6, str, peer->bind_ip) <= 0) {
-			printf("Error: invalid IP address: %s\n", str);
-			return -EINVAL;
-		}
-	}
-
-	ret = load_str_array_from_json(&peer->allowed_ips, &peer->nr_allowed_ips, jobj);
-	if (ret) {
-		printf("Error: failed to load 'allowed_ips' field\n");
-		return ret;
-	}
-
-	return 0;
-}
-
-int wgm_peer_array_from_json(struct wgm_peer **peers, uint16_t *nr_peers, json_object *jarr)
-{
-	size_t i;
-	int ret;
-
-	*nr_peers = 0;
-	*peers = NULL;
-
-	if (!json_object_is_type(jarr, json_type_array)) {
-		printf("Error: invalid 'peers' field\n");
-		return -EINVAL;
-	}
-
-	*nr_peers = json_object_array_length(jarr);
-	if (!*nr_peers)
-		return 0;
-
-	*peers = calloc(*nr_peers, sizeof(struct wgm_peer));
-	if (!*peers)
-		return -ENOMEM;
-
-	for (i = 0; i < *nr_peers; i++) {
-		ret = wgm_peer_from_json(&(*peers)[i], json_object_array_get_idx(jarr, i));
-		if (ret) {
-			free_str_array((*peers)[i].allowed_ips, (*peers)[i].nr_allowed_ips);
-			free(*peers);
-			*peers = NULL;
-			*nr_peers = 0;
-			return ret;
-		}
-	}
-
-	return 0;
-}
-#endif
-
-int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
-{
-	return 0;
 }
 
 void wgm_peer_dump(const struct wgm_peer *peer)

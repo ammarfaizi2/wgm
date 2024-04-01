@@ -338,6 +338,13 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	return wgm_iface_save(ctx, &iface);
 }
 
+void wgm_iface_free(struct wgm_iface *iface)
+{
+	wgm_str_array_free(&iface->addresses);
+	wgm_str_array_free(&iface->allowed_ips);
+	wgm_peer_array_free(&iface->peers);
+}
+
 void wgm_iface_dump(const struct wgm_iface *iface)
 {
 	printf("Interface: %s\n", iface->ifname);
@@ -359,4 +366,79 @@ void wgm_peer_array_dump(const struct wgm_peer_array *peers)
 		printf("  Peer %zu:\n", i);
 		wgm_peer_dump(&peers->peers[i]);
 	}
+}
+
+void wgm_peer_array_free(struct wgm_peer_array *peers)
+{
+	size_t i;
+
+	if (!peers)
+		return;
+
+	for (i = 0; i < peers->nr; i++)
+		wgm_peer_free(&peers->peers[i]);
+
+	free(peers->peers);
+	memset(peers, 0, sizeof(*peers));
+}
+
+int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer)
+{
+	struct wgm_peer *tmp;
+	size_t i;
+
+	tmp = realloc(iface->peers.peers, (iface->peers.nr + 1) * sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	i = iface->peers.nr;
+	iface->peers.peers = tmp;
+	iface->peers.nr++;
+	iface->peers.peers[i] = *peer;
+	return 0;
+}
+
+int wgm_iface_del_peer(struct wgm_iface *iface, const char *public_key)
+{
+	struct wgm_peer *tmp;
+	size_t i, j;
+
+	for (i = 0; i < iface->peers.nr; i++) {
+		if (strcmp(iface->peers.peers[i].public_key, public_key) == 0)
+			break;
+	}
+
+	if (i == iface->peers.nr)
+		return -ENOENT;
+
+	tmp = malloc((iface->peers.nr - 1) * sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	for (j = 0; j < iface->peers.nr; j++) {
+		if (j < i)
+			tmp[j] = iface->peers.peers[j];
+		else if (j > i)
+			tmp[j - 1] = iface->peers.peers[j];
+	}
+
+	free(iface->peers.peers);
+	iface->peers.peers = tmp;
+	iface->peers.nr--;
+	return 0;
+
+}
+
+int wgm_iface_update_peer(struct wgm_iface *iface, const struct wgm_peer *peer)
+{
+	size_t i;
+
+	for (i = 0; i < iface->peers.nr; i++) {
+		if (strcmp(iface->peers.peers[i].public_key, peer->public_key) == 0) {
+			iface->peers.peers[i] = *peer;
+			return 0;
+		}
+	}
+
+	return -ENOENT;
 }
