@@ -1,6 +1,8 @@
 {
 	"files.associations": {
 		"types.h": "c",
-		"stdlib.h": "c"
+		"stdlib.h": "c",
+		"wg_iface.h": "c",
+		"stdint.h": "c"
 	}
 }
