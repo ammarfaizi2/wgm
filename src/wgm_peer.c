@@ -71,7 +71,7 @@ static int wgm_peer_parse_args(int argc, char *argv[], struct wgm_peer_arg *arg)
 		case 'b':
 			if (inet_pton(AF_INET, optarg, tmp_ip) <= 0) {
 				if (inet_pton(AF_INET6, optarg, tmp_ip) <= 0) {
-					wgm_log_err("Error: invalid IP address: %s\n", optarg);
+					wgm_log_err("Error: wgm_peer_parse_args: invalid IP address: %s\n", optarg);
 					return -EINVAL;
 				}
 			}
