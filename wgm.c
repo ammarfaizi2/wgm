@@ -65,6 +65,14 @@ static const struct option wgm_create_options[] = {
 	{NULL,			0,			NULL,	0},
 };
 
+static const struct option wgm_add_peer_options[] = {
+	{"ifname",		required_argument,	NULL,	'i'},
+	{"public-key",		required_argument,	NULL,	'p'},
+	{"allowed-ips",		required_argument,	NULL,	'a'},
+	{"help",		no_argument,		NULL,	'h'},
+	{NULL,			0,			NULL,	0},
+};
+
 static char *strncpy2(char *dest, const char *src, size_t n)
 {
 	strncpy(dest, src, n - 1);
@@ -299,7 +307,7 @@ out:
 static int wgm_load_iface(struct wgm_iface *iface, const char *ifname)
 {
 	size_t len, read_ret;
-	char path[4096];
+	char path[8192];
 	char *jstr;
 	FILE *fp;
 	int ret;
@@ -335,7 +343,7 @@ static int wgm_load_iface(struct wgm_iface *iface, const char *ifname)
 static int wgm_save_iface(const struct wgm_iface *iface)
 {
 	json_object *jobj, *tmp;
-	char path[4096];
+	char path[8192];
 	FILE *fp;
 	int ret;
 
@@ -495,6 +503,32 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_create_arg *arg)
 	if (!(flags & WGM_CREATE_HAS_PRIVATE_KEY)) {
 		printf("Error: missing private key\n");
 		return -1;
+	}
+
+	return 0;
+}
+
+static int wgm_add_peer_getopt(int argc, char *argv[], struct wgm_peer *peer)
+{
+	int c;
+
+	while (1) {
+		c = getopt_long(argc, argv, "i:p:a:h", wgm_add_peer_options, NULL);
+		if (c < 0)
+			break;
+
+		switch (c) {
+		case 'i':
+			break;
+		case 'p':
+			break;
+		case 'a':
+			break;
+		case 'h':
+			break;
+		case '?':
+			break;
+		}
 	}
 
 	return 0;
