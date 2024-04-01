@@ -37,19 +37,19 @@ int load_str_array_from_json(char ***array, uint16_t *nr, const json_object *job
 	for (i = 0; i < *nr; i++) {
 		tmp = json_object_array_get_idx(jobj, i);
 		if (!tmp || !json_object_is_type(tmp, json_type_string)) {
-			fprintf(stderr, "Error: invalid array element\n");
+			wgm_log_err("Error: invalid array element\n");
 			goto err;
 		}
 
 		tstr = json_object_get_string(tmp);
 		if (!tstr) {
-			fprintf(stderr, "Error: invalid array element\n");
+			wgm_log_err("Error: invalid array element\n");
 			goto err;
 		}
 
 		(*array)[i] = strdup(tstr);
 		if (!(*array)[i]) {
-			fprintf(stderr, "Error: failed to allocate memory\n");
+			wgm_log_err("Error: failed to allocate memory\n");
 			goto err;
 		}
 	}
