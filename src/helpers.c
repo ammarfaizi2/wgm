@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <json-c/json.h>
+#include <linux/if.h>
 
 int load_str_array_from_json(char ***array, uint16_t *nr, const json_object *jobj)
 {
@@ -104,6 +105,9 @@ void free_str_array(char **array, size_t nr)
 {
 	size_t i;
 
+	if (!array)
+		return;
+
 	for (i = 0; i < nr; i++)
 		free(array[i]);
 
@@ -123,4 +127,49 @@ json_object *json_object_new_from_str_array(char **array, uint16_t nr)
 		json_object_array_add(jobj, json_object_new_string(array[i]));
 
 	return jobj;
+}
+
+int wgm_parse_ifname(const char *ifname, char *buf)
+{
+	size_t i, len;
+
+	if (strlen(ifname) >= IFNAMSIZ) {
+		printf("Error: interface name is too long, max length is %d\n", IFNAMSIZ - 1);
+		return -1;
+	}
+
+	strncpy(buf, ifname, IFNAMSIZ - 1);
+	buf[IFNAMSIZ - 1] = '\0';
+
+	/*
+	 * Validate the interface name:
+	 *   - Must be a valid interface name.
+	 *   - Valid characters: [a-zA-Z0-9\-]
+	 */
+	len = strlen(buf);
+	for (i = 0; i < len; i++) {
+		if ((buf[i] >= 'a' && buf[i] <= 'z') ||
+		    (buf[i] >= 'A' && buf[i] <= 'Z') ||
+		    (buf[i] >= '0' && buf[i] <= '9') ||
+		    buf[i] == '-') {
+			continue;
+		}
+
+		printf("Error: invalid interface name: %s\n", buf);
+		return -1;
+	}
+
+	return 0;
+}
+
+int wgm_parse_key(const char *key, char *buf, size_t size)
+{
+	if (strlen(key) >= size) {
+		printf("Error: private key is too long, max length is %zu\n", size - 1);
+		return -1;
+	}
+
+	strncpy(buf, key, size - 1);
+	buf[size - 1] = '\0';
+	return 0;
 }

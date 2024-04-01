@@ -33,4 +33,10 @@ struct wgm_iface_arg {
 int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx);
 
+int wgm_iface_load(struct wgm_ctx *ctx, struct wgm_iface *iface, const char *ifname);
+int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface);
+
+void wgm_iface_dump(const struct wgm_iface *iface);
+void wgm_iface_free(struct wgm_iface *iface);
+
 #endif /* #ifndef WGM__WG_IFACE_H */

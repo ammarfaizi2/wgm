@@ -37,39 +37,6 @@ static void wgm_iface_add_help(const char *app)
 	printf("  -f, --force\t\t\tForce update if error or interface exists\n");
 }
 
-static int wgm_parse_ifname(const char *ifname, char *buf)
-{
-	size_t i, len;
-
-	if (strlen(ifname) >= IFNAMSIZ) {
-		printf("Error: interface name is too long, max length is %d\n", IFNAMSIZ - 1);
-		return -1;
-	}
-
-	strncpy(buf, ifname, IFNAMSIZ - 1);
-	buf[IFNAMSIZ - 1] = '\0';
-
-	/*
-	 * Validate the interface name:
-	 *   - Must be a valid interface name.
-	 *   - Valid characters: [a-zA-Z0-9\-]
-	 */
-	len = strlen(buf);
-	for (i = 0; i < len; i++) {
-		if ((buf[i] >= 'a' && buf[i] <= 'z') ||
-		    (buf[i] >= 'A' && buf[i] <= 'Z') ||
-		    (buf[i] >= '0' && buf[i] <= '9') ||
-		    buf[i] == '-') {
-			continue;
-		}
-
-		printf("Error: invalid interface name: %s\n", buf);
-		return -1;
-	}
-
-	return 0;
-}
-
 static int wgm_parse_port(const char *port, uint16_t *value)
 {
 	char *endptr;
@@ -84,19 +51,6 @@ static int wgm_parse_port(const char *port, uint16_t *value)
 	*value = (uint16_t)val;
 	return 0;
 }
-
-static int wgm_parse_private_key(const char *key, char *buf, size_t size)
-{
-	if (strlen(key) >= size) {
-		printf("Error: private key is too long, max length is %zu\n", size - 1);
-		return -1;
-	}
-
-	strncpy(buf, key, size - 1);
-	buf[size - 1] = '\0';
-	return 0;
-}
-
 
 static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 {
@@ -113,17 +67,17 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 		switch (c) {
 		case 'i':
 			if (wgm_parse_ifname(optarg, arg->ifname) < 0)
-				return -1;
+				return -EINVAL;
 			flags |= WGM_IFACE_ARG_HAS_IFNAME;
 			break;
 		case 'l':
 			if (wgm_parse_port(optarg, &arg->listen_port) < 0)
-				return -1;
+				return -EINVAL;
 			flags |= WGM_IFACE_ARG_HAS_LISTEN_PORT;
 			break;
 		case 'k':
-			if (wgm_parse_private_key(optarg, arg->private_key, sizeof(arg->private_key)) < 0)
-				return -1;
+			if (wgm_parse_key(optarg, arg->private_key, sizeof(arg->private_key)))
+				return -EINVAL;
 			flags |= WGM_IFACE_ARG_HAS_PRIVATE_KEY;
 			break;
 		case 'f':
@@ -133,7 +87,7 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 			wgm_iface_add_help(argv[0]);
 			return -1;
 		case '?':
-			return -1;
+			return -EINVAL;
 		}
 	}
 
@@ -155,7 +109,7 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 	return 0;
 }
 
-static int wgm_load_iface_json_str(struct wgm_iface *iface, const char *jstr)
+static int wgm_iface_load_from_json_str(struct wgm_iface *iface, const char *jstr)
 {
 	json_object *jobj, *tmp;
 	const char *tstr;
@@ -244,14 +198,30 @@ static int wgm_load_iface_json_str(struct wgm_iface *iface, const char *jstr)
 		goto out;
 	}
 
+	tmp = json_object_object_get(jobj, "peers");
+	if (!tmp || !json_object_is_type(tmp, json_type_array)) {
+		fprintf(stderr, "Error: missing or invalid 'peers' field\n");
+		free_str_array(iface->addresses, iface->nr_addresses);
+		free_str_array(iface->allowed_ips, iface->nr_allowed_ips);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	ret = wgm_peer_array_from_json(&iface->peers, &iface->nr_peers, tmp);
+	if (ret) {
+		fprintf(stderr, "Error: failed to load 'peers' field\n");
+		free_str_array(iface->addresses, iface->nr_addresses);
+		free_str_array(iface->allowed_ips, iface->nr_allowed_ips);
+		goto out;
+	}
+
 	ret = 0;
 out:
 	json_object_put(jobj);
 	return ret;
 }
 
-static int wgm_load_iface(struct wgm_ctx *ctx, struct wgm_iface *iface,
-			  const char *ifname)
+int wgm_iface_load(struct wgm_ctx *ctx, struct wgm_iface *iface, const char *ifname)
 {
 	size_t len, read_ret;
 	char path[8192];
@@ -282,7 +252,7 @@ static int wgm_load_iface(struct wgm_ctx *ctx, struct wgm_iface *iface,
 	}
 
 	jstr[len] = '\0';
-	ret = wgm_load_iface_json_str(iface, jstr);
+	ret = wgm_iface_load_from_json_str(iface, jstr);
 	free(jstr);
 	return ret;
 }
@@ -328,7 +298,9 @@ int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface)
 	tmp = json_object_new_from_str_array(iface->allowed_ips, iface->nr_allowed_ips);
 	json_object_object_add(jobj, "allowed_ips", tmp);
 
-	tmp = json_object_new_array();
+	tmp = wgm_peer_array_to_json(iface->peers, iface->nr_peers);
+	if (!tmp)
+		return -ENOMEM;
 	json_object_object_add(jobj, "peers", tmp);
 
 	fputs(json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_PRETTY), fp);
@@ -373,7 +345,7 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	if (ret < 0)
 		return -1;
 
-	ret = wgm_load_iface(ctx, &iface, arg.ifname);
+	ret = wgm_iface_load(ctx, &iface, arg.ifname);
 	if (!ret) {
 		if (!arg.force) {
 			printf("Error: interface already exists, use --force to force update\n");
@@ -390,4 +362,38 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	iface.listen_port = arg.listen_port;
 	strncpyl(iface.private_key, arg.private_key, sizeof(iface.private_key));
 	return __wgm_iface_add(ctx, &iface);
+}
+
+void wgm_iface_dump(const struct wgm_iface *iface)
+{
+	size_t i;
+
+	printf("Interface: %s\n", iface->ifname);
+	printf("  Listen port: %u\n", iface->listen_port);
+	printf("  Private key: %s\n", iface->private_key);
+
+	printf("  Addresses:\n");
+	for (i = 0; i < iface->nr_addresses; i++)
+		printf("    %s\n", iface->addresses[i]);
+
+	printf("  Allowed IPs:\n");
+	for (i = 0; i < iface->nr_allowed_ips; i++)
+		printf("    %s\n", iface->allowed_ips[i]);
+
+	printf("  Peers:\n");
+	for (i = 0; i < iface->nr_peers; i++)
+		wgm_peer_dump(&iface->peers[i]);
+}
+
+void wgm_iface_free(struct wgm_iface *iface)
+{
+	size_t i;
+
+	free_str_array(iface->addresses, iface->nr_addresses);
+	free_str_array(iface->allowed_ips, iface->nr_allowed_ips);
+	for (i = 0; i < iface->nr_peers; i++)
+		wgm_peer_free(&iface->peers[i]);
+
+	free(iface->peers);
+	memset(iface, 0, sizeof(*iface));
 }
