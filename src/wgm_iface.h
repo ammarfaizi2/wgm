@@ -34,8 +34,10 @@ struct wgm_iface_arg {
 	struct wgm_str_array allowed_ips;
 };
 
-int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx);
-int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_iface_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx);
 
 int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer);
 int wgm_iface_del_peer(struct wgm_iface *iface, const char *public_key);

@@ -110,7 +110,22 @@ err:
 	return -EINVAL;
 }
 
-int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx)
+int wgm_peer_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	return 0;
+}
+
+int wgm_peer_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	return 0;
+}
+
+int wgm_peer_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	return 0;
+}
+
+int wgm_peer_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	struct wgm_peer_arg arg;
 	struct wgm_iface iface;

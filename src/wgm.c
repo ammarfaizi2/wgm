@@ -68,8 +68,16 @@ static int wgm_run(int argc, char *argv[], struct wgm_ctx *ctx)
 		}
 
 		if (!strcmp(argv[2], "add"))
-			return wgm_iface_add(argc - 2, argv + 2, ctx);
+			return wgm_iface_cmd_add(argc - 2, argv + 2, ctx);
 
+		if (!strcmp(argv[2], "del"))
+			return wgm_iface_cmd_del(argc - 2, argv + 2, ctx);
+
+		if (!strcmp(argv[2], "show"))
+			return wgm_iface_cmd_show(argc - 2, argv + 2, ctx);
+
+		if (!strcmp(argv[2], "update"))
+			return wgm_iface_cmd_update(argc - 2, argv + 2, ctx);
 
 		printf("Error: unknown command: iface %s\n", argv[2]);
 		return 1;
@@ -82,7 +90,16 @@ static int wgm_run(int argc, char *argv[], struct wgm_ctx *ctx)
 		}
 
 		if (!strcmp(argv[2], "add"))
-			return wgm_peer_add(argc - 2, argv + 2, ctx);
+			return wgm_peer_cmd_add(argc - 2, argv + 2, ctx);
+
+		if (!strcmp(argv[2], "del"))
+			return wgm_peer_cmd_del(argc - 2, argv + 2, ctx);
+
+		if (!strcmp(argv[2], "show"))
+			return wgm_peer_cmd_show(argc - 2, argv + 2, ctx);
+
+		if (!strcmp(argv[2], "update"))
+			return wgm_peer_cmd_update(argc - 2, argv + 2, ctx);
 
 		printf("Error: unknown command: peer %s\n", argv[2]);
 		return 1;

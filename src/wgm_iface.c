@@ -92,17 +92,20 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 	}
 
 	if (!(flags & WGM_IFACE_ARG_HAS_IFNAME)) {
-		wgm_log_err("Error: missing interface name\n");
+		wgm_log_err("Error: missing interface name\n\n");
+		wgm_iface_add_help(argv[0]);
 		return -1;
 	}
 
 	if (!(flags & WGM_IFACE_ARG_HAS_LISTEN_PORT)) {
-		wgm_log_err("Error: missing listen port\n");
+		wgm_log_err("Error: missing listen port\n\n");
+		wgm_iface_add_help(argv[0]);
 		return -1;
 	}
 
 	if (!(flags & WGM_IFACE_ARG_HAS_PRIVATE_KEY)) {
-		wgm_log_err("Error: missing private key\n");
+		wgm_log_err("Error: missing private key\n\n");
+		wgm_iface_add_help(argv[0]);
 		return -1;
 	}
 
@@ -408,6 +411,17 @@ int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx)
 	return 0;
 }
 
+
+int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	return 0;
+}
+
+int wgm_iface_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	return 0;
+}
+
 /*
  * "iface add" rules:
  *
@@ -418,7 +432,7 @@ int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx)
  *   3) If the interface name already exists, it will try to update the
  *      listen port and private key.
  */
-int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
+int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	struct wgm_iface_arg arg;
 	struct wgm_iface iface;
@@ -433,11 +447,11 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	ret = wgm_iface_load(ctx, &iface, arg.ifname);
 	if (!ret) {
 		if (!arg.force) {
-			wgm_log_err("Error: wgm_iface_add: interface already exists, use -f or --force to force update\n");
+			wgm_log_err("Error: wgm_iface_cmd_add: interface already exists, use -f or --force to force update\n");
 			return -EEXIST;
 		}
 
-		wgm_iface_dump(&iface);
+		wgm_iface_dump_json(&iface);
 		wgm_iface_save(ctx, &iface);
 		return wgm_iface_update(argc, argv, ctx);
 	}
@@ -452,7 +466,7 @@ int wgm_iface_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	strncpyl(iface.ifname, arg.ifname, IFNAMSIZ);
 	iface.listen_port = arg.listen_port;
 	strncpyl(iface.private_key, arg.private_key, sizeof(iface.private_key));
-	wgm_iface_dump(&iface);
+	wgm_iface_dump_json(&iface);
 	return wgm_iface_save(ctx, &iface);
 }
 

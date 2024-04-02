@@ -21,8 +21,10 @@ struct wgm_peer_arg {
 	bool		force;
 };
 
-int wgm_peer_add(int argc, char *argv[], struct wgm_ctx *ctx);
-int wgm_peer_update(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_peer_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_peer_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_peer_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_peer_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx);
 
 void wgm_peer_free(struct wgm_peer *peer);
 void wgm_peer_dump(const struct wgm_peer *peer);
