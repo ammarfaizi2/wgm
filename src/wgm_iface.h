@@ -18,6 +18,7 @@ struct wgm_peer_array {
 struct wgm_iface {
 	char		ifname[IFNAMSIZ];
 	uint16_t	listen_port;
+	uint16_t	mtu;
 	char		private_key[128];
 
 	struct wgm_str_array addresses;
@@ -29,6 +30,7 @@ struct wgm_iface_arg {
 	bool		force;
 	char		ifname[IFNAMSIZ];
 	uint16_t	listen_port;
+	uint16_t	mtu;
 	char		private_key[128];
 	struct wgm_str_array addresses;
 	struct wgm_str_array allowed_ips;

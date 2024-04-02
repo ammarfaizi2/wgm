@@ -15,39 +15,53 @@ struct priv_arg {
 };
 
 static const struct priv_arg aarg[] = {
-#define ARG_IFACE (1ull << 0ull)
+#define ARG_IFACE	(1ull << 0ull)
 	{ARG_IFACE, "--ifname"},
 
-#define ARG_LISTEN_PORT (1ull << 1ull)
+#define ARG_LISTEN_PORT	(1ull << 1ull)
 	{ARG_LISTEN_PORT, "--listen-port"},
 
-#define ARG_PRIVATE_KEY (1ull << 2ull)
+#define ARG_PRIVATE_KEY	(1ull << 2ull)
 	{ARG_PRIVATE_KEY, "--private-key"},
 
-#define ARG_FORCE (1ull << 3ull)
+#define ARG_ALLOWED_IP	(1ull << 3ull)
+	{ARG_ALLOWED_IP, "--allowed-ip"},
+
+#define ARG_MTU		(1ull << 4ull)
+	{ARG_MTU, "--mtu"},
+
+#define ARG_ADDRESS	(1ull << 5ull)
+	{ARG_ADDRESS, "--address"},
+
+#define ARG_FORCE	(1ull << 63ull)
 	{ARG_FORCE, "--force"},
 };
-
-static const char wgm_iface_opt_short[] = "i:l:k:hf";
 
 static const struct option wgm_iface_opt_long[] = {
 	{"ifname",		required_argument,	NULL,	'i'},
 	{"listen-port",		required_argument,	NULL,	'l'},
 	{"private-key",		required_argument,	NULL,	'k'},
+	{"mtu",			required_argument,	NULL,	'm'},
+	{"address",		required_argument,	NULL,	'a'},
+	{"allowed-ip",		required_argument,	NULL,	'p'},
 	{"help",		no_argument,		NULL,	'h'},
 	{"force",		no_argument,		NULL,	'f'},
 	{NULL,			0,			NULL,	0},
 };
+static const char wgm_iface_opt_short[] = "i:l:k:m:a:p:hf";
 
 static void wgm_iface_help(const char *app)
 {
-	printf("Usage: %s [command] [options]\n", app);
+	printf("Usage: %s [options]\n\n", app);
 	printf("Options:\n");
-	printf("  -i, --ifname=IFNAME\t\tInterface name\n");
-	printf("  -l, --listen-port=PORT\tListen port\n");
-	printf("  -k, --private-key=KEY\tPrivate key\n");
-	printf("  -h, --help\t\t\tDisplay this help\n");
-	printf("  -f, --force\t\t\tForce update if error or interface exists\n");
+	printf("  -i, --ifname <name>       Interface name\n");
+	printf("  -l, --listen-port <port>  Listen port\n");
+	printf("  -k, --private-key <key>   Private key\n");
+	printf("  -m, --mtu <size>          MTU\n");
+	printf("  -a, --address <addr>      Address (comma separated for multiple values)\n");
+	printf("  -p, --allowed-ip <addr>   Allowed IP (comma separated for multiple values)\n");
+	printf("  -f, --force               Force operation\n");
+	printf("  -h, --help                Show this help message\n");
 }
 
 static int wgm_parse_port(const char *port, uint16_t *value)
@@ -65,8 +79,9 @@ static int wgm_parse_port(const char *port, uint16_t *value)
 	return 0;
 }
 
-static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
-			     uint64_t allowed_args, uint64_t required_args)
+static int wgm_iface_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
+			     uint64_t allowed_args, uint64_t required_args,
+			     uint64_t *out_flags)
 {
 	uint64_t flags = 0;
 	size_t i;
@@ -95,6 +110,21 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
 				return -EINVAL;
 			flags |= ARG_PRIVATE_KEY;
 			break;
+		case 'm':
+			if (wgm_parse_mtu(optarg, &arg->mtu) < 0)
+				return -EINVAL;
+			flags |= ARG_MTU;
+			break;
+		case 'a':
+			if (wgm_parse_csv(&arg->addresses, optarg) < 0)
+				return -EINVAL;
+			flags |= ARG_ADDRESS;
+			break;
+		case 'p':
+			if (wgm_parse_csv(&arg->allowed_ips, optarg) < 0)
+				return -EINVAL;
+			flags |= ARG_ALLOWED_IP;
+			break;
 		case 'f':
 			arg->force = true;
 			flags |= ARG_FORCE;
@@ -111,7 +141,7 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
 
 		if (!(aarg[i].flags & allowed_args)) {
 			if (flags & aarg[i].flags) {
-				wgm_log_err("Error: wgm_create_getopt: argument %s is not allowed for this command\n", aarg[i].name);
+				wgm_log_err("\nError: wgm_iface_getopt: argument %s is not allowed for this command\n", aarg[i].name);
 				return -EINVAL;
 			}
 
@@ -122,11 +152,14 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
 			continue;
 
 		if (!(flags & aarg[i].flags)) {
-			wgm_log_err("Error: wgm_create_getopt: missing required argument: %s\n\n", aarg[i].name);
+			wgm_log_err("\nError: wgm_iface_getopt: missing required argument: %s\n\n", aarg[i].name);
 			wgm_iface_help(argv[0]);
 			return -EINVAL;
 		}
 	}
+
+	if (out_flags)
+		*out_flags = flags;
 
 	return 0;
 }
@@ -183,6 +216,9 @@ static char *wgm_iface_to_json_str(const struct wgm_iface *iface)
 
 	tmp = json_object_new_int(iface->listen_port);
 	json_object_object_add(jobj, "listen_port", tmp);
+
+	tmp = json_object_new_int(iface->mtu);
+	json_object_object_add(jobj, "mtu", tmp);
 
 	tmp = json_object_new_string(iface->private_key);
 	json_object_object_add(jobj, "private_key", tmp);
@@ -428,12 +464,13 @@ int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
 	static const uint64_t allowed_args = required_args | ARG_FORCE;
 	struct wgm_iface_arg arg;
 	struct wgm_iface iface;
+	uint64_t out_args = 0;
 	char path[8192];
 	int ret;
 
 	memset(&arg, 0, sizeof(arg));
 	memset(&iface, 0, sizeof(iface));
-	ret = wgm_create_getopt(argc, argv, &arg, allowed_args, required_args);
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, required_args, &out_args);
 	if (ret < 0)
 		return -1;
 
@@ -468,13 +505,27 @@ int wgm_iface_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx)
 	return 0;
 }
 
-static int do_cmd_update(struct wgm_ctx *ctx, struct wgm_iface_arg *arg, struct wgm_iface *iface)
+static int apply_arg_to_iface(struct wgm_ctx *ctx, struct wgm_iface_arg *arg,
+			      struct wgm_iface *iface, uint64_t args)
 {
-	if (arg->listen_port)
+
+	if (args & ARG_IFACE)
+		strncpyl(iface->ifname, arg->ifname, IFNAMSIZ);
+
+	if (args & ARG_LISTEN_PORT)
 		iface->listen_port = arg->listen_port;
 
-	if (arg->private_key[0])
+	if (args & ARG_PRIVATE_KEY)
 		strncpyl(iface->private_key, arg->private_key, sizeof(iface->private_key));
+
+	if (args & ARG_MTU)
+		iface->mtu = arg->mtu;
+
+	if (args & ARG_ADDRESS)
+		iface->addresses = arg->addresses;
+
+	if (args & ARG_ALLOWED_IP)
+		iface->allowed_ips = arg->allowed_ips;
 
 	wgm_iface_dump_json(iface);
 	return wgm_iface_save(ctx, iface);
@@ -492,15 +543,16 @@ static int do_cmd_update(struct wgm_ctx *ctx, struct wgm_iface_arg *arg, struct 
  */
 int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
-	static const uint64_t required_args = ARG_IFACE | ARG_LISTEN_PORT | ARG_PRIVATE_KEY;
+	static const uint64_t required_args = ARG_IFACE | ARG_LISTEN_PORT | ARG_PRIVATE_KEY | ARG_ADDRESS | ARG_ALLOWED_IP | ARG_MTU;
 	static const uint64_t allowed_args = required_args | ARG_FORCE;
 	struct wgm_iface_arg arg;
 	struct wgm_iface iface;
+	uint64_t out_args = 0;
 	int ret;
 
 	memset(&arg, 0, sizeof(arg));
 	memset(&iface, 0, sizeof(iface));
-	ret = wgm_create_getopt(argc, argv, &arg, allowed_args, required_args);
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, required_args, &out_args);
 	if (ret < 0)
 		return -1;
 
@@ -511,21 +563,26 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 			return -EEXIST;
 		}
 
-		return do_cmd_update(ctx, &arg, &iface);
+		printf("# Force flag is set and interface already exists, updating...\n");
+		goto out;
 	}
 
 	if (ret != -ENOENT) {
 		if (!arg.force)
 			return ret;
 
-		printf("Force flag is set, ignoring error...\n");
+		printf("# Force flag is set, ignoring error...\n");
 	}
 
-	strncpyl(iface.ifname, arg.ifname, IFNAMSIZ);
-	iface.listen_port = arg.listen_port;
-	strncpyl(iface.private_key, arg.private_key, sizeof(iface.private_key));
-	wgm_iface_dump_json(&iface);
-	return wgm_iface_save(ctx, &iface);
+out:
+	ret = apply_arg_to_iface(ctx, &arg, &iface, out_args);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_add: failed to save interface: %s: %s\n", arg.ifname, strerror(-ret));
+		return ret;
+	}
+
+	wgm_iface_free(&iface);
+	return 0;
 }
 
 int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
@@ -534,11 +591,12 @@ int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
 	static const uint64_t allowed_args = required_args | ARG_LISTEN_PORT | ARG_PRIVATE_KEY | ARG_FORCE;
 	struct wgm_iface_arg arg;
 	struct wgm_iface iface;
+	uint64_t out_args = 0;
 	int ret;
 
 	memset(&arg, 0, sizeof(arg));
 	memset(&iface, 0, sizeof(iface));
-	ret = wgm_create_getopt(argc, argv, &arg, allowed_args, required_args);
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, required_args, &out_args);
 	if (ret < 0)
 		return -1;
 
@@ -548,7 +606,14 @@ int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
 		return ret;
 	}
 
-	return do_cmd_update(ctx, &arg, &iface);
+	ret = apply_arg_to_iface(ctx, &arg, &iface, out_args);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_update: failed to save interface: %s: %s\n", arg.ifname, strerror(-ret));
+		return ret;
+	}
+
+	wgm_iface_free(&iface);
+	return 0;
 }
 
 void wgm_iface_free(struct wgm_iface *iface)

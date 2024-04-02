@@ -32,4 +32,6 @@ void wgm_str_array_dump(const struct wgm_str_array *arr);
 
 int wgm_parse_csv(struct wgm_str_array *arr, const char *str_ips);
 
+int wgm_parse_mtu(const char *mtu, uint16_t *val);
+
 #endif /* #ifndef WGM__HELPERS_H */

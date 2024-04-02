@@ -327,3 +327,18 @@ out:
 	free(tmp);
 	return ret;
 }
+
+int wgm_parse_mtu(const char *mtu, uint16_t *val)
+{
+	char *endptr;
+	unsigned long long tmp;
+
+	tmp = strtoull(mtu, &endptr, 10);
+	if (*endptr || tmp > UINT16_MAX) {
+		printf("Error: invalid MTU value: %s\n", mtu);
+		return -1;
+	}
+
+	*val = tmp;
+	return 0;
+}
