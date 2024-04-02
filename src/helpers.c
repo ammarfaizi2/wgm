@@ -148,8 +148,7 @@ int wgm_parse_ifname(const char *ifname, char *buf)
 		return -1;
 	}
 
-	strncpy(buf, ifname, IFNAMSIZ - 1);
-	buf[IFNAMSIZ - 1] = '\0';
+	strncpyl(buf, ifname, IFNAMSIZ);
 
 	/*
 	 * Validate the interface name:

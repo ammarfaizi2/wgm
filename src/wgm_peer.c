@@ -58,7 +58,7 @@ static int wgm_peer_parse_args(int argc, char *argv[], struct wgm_peer_arg *arg)
 			flags |= WGM_PEER_ARG_HAS_IFNAME;
 			break;
 		case 'p':
-			if (wgm_parse_key(optarg, arg->public_key, sizeof(arg->public_key)) < 0)
+			if (wgm_parse_key(optarg, arg->public_key, sizeof(arg->public_key)))
 				return -EINVAL;
 			flags |= WGM_PEER_ARG_HAS_PUBLIC_KEY;
 			break;
@@ -256,7 +256,7 @@ int wgm_json_to_peer(struct wgm_peer *peer, const json_object *obj)
 		return -EINVAL;
 	}
 
-	strncpy(peer->public_key, tstr, sizeof(peer->public_key));
+	strncpyl(peer->public_key, tstr, sizeof(peer->public_key));
 
 	if (!json_object_object_get_ex(obj, "bind_ip", &tmp)) {
 		wgm_log_err("Error: wgm_json_to_peer: missing bind IP\n");
@@ -274,7 +274,7 @@ int wgm_json_to_peer(struct wgm_peer *peer, const json_object *obj)
 		return -EINVAL;
 	}
 
-	strncpy(peer->bind_ip, tstr, sizeof(peer->bind_ip));
+	strncpyl(peer->bind_ip, tstr, sizeof(peer->bind_ip));
 
 	if (!json_object_object_get_ex(obj, "allowed_ips", &tmp)) {
 		wgm_log_err("Error: wgm_json_to_peer: missing allowed IPs\n");
