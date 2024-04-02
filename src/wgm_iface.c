@@ -487,7 +487,7 @@ static int wgm_iface_gen_wg_conf_handle(FILE *fp, const struct wgm_iface *iface)
 	fprintf(fp, "PostUp   = iptables -N WGM_%s || true\n", iface->ifname);
 	fprintf(fp, "PostDown = iptables -F WGM_%s || true\n", iface->ifname);
 	fprintf(fp, "PostDown = iptables -X WGM_%s || true\n", iface->ifname);
-	fprintf(fp, "PostUp   = iptables -A FORWARD -i %s -j WGM_%s || true\n", iface->ifname, iface->ifname);
+	fprintf(fp, "PostUp   = iptables -A FORWARD -i %s -j WGM_%s\n", iface->ifname, iface->ifname);
 	fprintf(fp, "PostDown = iptables -D FORWARD -i %s -j WGM_%s || true\n", iface->ifname, iface->ifname);
 
 	for (i = 0; i < iface->peers.nr; i++) {
@@ -507,10 +507,10 @@ static int wgm_iface_gen_wg_conf_handle(FILE *fp, const struct wgm_iface *iface)
 		}
 	}
 
-	fprintf(fp, "PostUp   = iptables -t nat -A WGM_%s -j MASQUERADE || true\n", iface->ifname);
-	fprintf(fp, "PostUp   = iptables -t nat -I POSTROUTING -o %s -j WGM_%s || true\n", iface->ifname, iface->ifname);
+	fprintf(fp, "PostUp   = iptables -t nat -A WGM_%s -j MASQUERADE\n", iface->ifname);
+	fprintf(fp, "PostUp   = iptables -t nat -I POSTROUTING -o %s -j WGM_%s\n", iface->ifname, iface->ifname);
 	fprintf(fp, "PostDown = iptables -t nat -D POSTROUTING -o %s -j WGM_%s || true\n", iface->ifname, iface->ifname);
-	fprintf(fp, "PostUp   = iptables -t nat -I POSTROUTING -i %s -j WGM_%s || true\n", iface->ifname, iface->ifname);
+	fprintf(fp, "PostUp   = iptables -t nat -I POSTROUTING -i %s -j WGM_%s\n", iface->ifname, iface->ifname);
 	fprintf(fp, "PostDown = iptables -t nat -D POSTROUTING -i %s -j WGM_%s || true\n", iface->ifname, iface->ifname);
 
 	for (i = 0; i < iface->peers.nr; i++) {
