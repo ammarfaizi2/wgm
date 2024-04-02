@@ -9,10 +9,23 @@
 #include <stdlib.h>
 #include <json-c/json.h>
 
-enum {
-	WGM_IFACE_ARG_HAS_IFNAME	= (1ull << 0ull),
-	WGM_IFACE_ARG_HAS_LISTEN_PORT	= (1ull << 1ull),
-	WGM_IFACE_ARG_HAS_PRIVATE_KEY	= (1ull << 2ull),
+struct priv_arg {
+	uint64_t flags;
+	const char *name;
+};
+
+static const struct priv_arg aarg[] = {
+#define ARG_IFACE (1ull << 0ull)
+	{ARG_IFACE, "iface"},
+
+#define ARG_LISTEN_PORT (1ull << 1ull)
+	{ARG_LISTEN_PORT, "listen-port"},
+
+#define ARG_PRIVATE_KEY (1ull << 2ull)
+	{ARG_PRIVATE_KEY, "private-key"},
+
+#define ARG_FORCE (1ull << 3ull)
+	{ARG_FORCE, "force"},
 };
 
 static const char wgm_iface_opt_short[] = "i:l:k:hf";
@@ -26,9 +39,9 @@ static const struct option wgm_iface_opt_long[] = {
 	{NULL,			0,			NULL,	0},
 };
 
-static void wgm_iface_add_help(const char *app)
+static void wgm_iface_help(const char *app)
 {
-	printf("Usage: %s create [options]\n", app);
+	printf("Usage: %s [command] [options]\n", app);
 	printf("Options:\n");
 	printf("  -i, --ifname=IFNAME\t\tInterface name\n");
 	printf("  -l, --listen-port=PORT\tListen port\n");
@@ -52,9 +65,11 @@ static int wgm_parse_port(const char *port, uint16_t *value)
 	return 0;
 }
 
-static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
+static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
+			     uint64_t allowed_args, uint64_t required_args)
 {
 	uint64_t flags = 0;
+	size_t i;
 	int c;
 
 	arg->force = false;
@@ -68,45 +83,49 @@ static int wgm_create_getopt(int argc, char *argv[], struct wgm_iface_arg *arg)
 		case 'i':
 			if (wgm_parse_ifname(optarg, arg->ifname) < 0)
 				return -EINVAL;
-			flags |= WGM_IFACE_ARG_HAS_IFNAME;
+			flags |= ARG_IFACE;
 			break;
 		case 'l':
 			if (wgm_parse_port(optarg, &arg->listen_port) < 0)
 				return -EINVAL;
-			flags |= WGM_IFACE_ARG_HAS_LISTEN_PORT;
+			flags |= ARG_LISTEN_PORT;
 			break;
 		case 'k':
 			if (wgm_parse_key(optarg, arg->private_key, sizeof(arg->private_key)))
 				return -EINVAL;
-			flags |= WGM_IFACE_ARG_HAS_PRIVATE_KEY;
+			flags |= ARG_PRIVATE_KEY;
 			break;
 		case 'f':
 			arg->force = true;
+			flags |= ARG_FORCE;
 			break;
 		case 'h':
-			wgm_iface_add_help(argv[0]);
+			wgm_iface_help(argv[0]);
 			return -1;
 		case '?':
 			return -EINVAL;
 		}
 	}
 
-	if (!(flags & WGM_IFACE_ARG_HAS_IFNAME)) {
-		wgm_log_err("Error: missing interface name\n\n");
-		wgm_iface_add_help(argv[0]);
-		return -1;
-	}
+	for (i = 0; i < sizeof(aarg) / sizeof(aarg[0]); i++) {
 
-	if (!(flags & WGM_IFACE_ARG_HAS_LISTEN_PORT)) {
-		wgm_log_err("Error: missing listen port\n\n");
-		wgm_iface_add_help(argv[0]);
-		return -1;
-	}
+		if (!(aarg[i].flags & allowed_args)) {
+			if (flags & aarg[i].flags) {
+				wgm_log_err("Error: wgm_create_getopt: argument %s is not allowed for this command\n", aarg[i].name);
+				return -EINVAL;
+			}
 
-	if (!(flags & WGM_IFACE_ARG_HAS_PRIVATE_KEY)) {
-		wgm_log_err("Error: missing private key\n\n");
-		wgm_iface_add_help(argv[0]);
-		return -1;
+			continue;
+		}
+
+		if (!(aarg[i].flags & required_args))
+			continue;
+
+		if (!(flags & aarg[i].flags)) {
+			wgm_log_err("Error: wgm_create_getopt: missing required argument: %s\n\n", aarg[i].name);
+			wgm_iface_help(argv[0]);
+			return -EINVAL;
+		}
 	}
 
 	return 0;
@@ -403,7 +422,7 @@ int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface)
 	return 0;
 }
 
-int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx)
+int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	(void)argc;
 	(void)argv;
@@ -414,6 +433,42 @@ int wgm_iface_update(int argc, char *argv[], struct wgm_ctx *ctx)
 
 int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
 {
+	static const uint64_t required_args = ARG_IFACE;
+	static const uint64_t allowed_args = required_args | ARG_FORCE;
+	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
+	char path[8192];
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+	ret = wgm_create_getopt(argc, argv, &arg, allowed_args, required_args);
+	if (ret < 0)
+		return -1;
+
+	ret = wgm_iface_load(ctx, &iface, arg.ifname);
+	if (ret == -ENOENT) {
+		if (!arg.force) {
+			wgm_log_err("Error: wgm_iface_cmd_del: interface does not exist, use -f or --force to silently ignore\n");
+			return -ENOENT;
+		}
+
+		return 0;
+	}
+
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_del: failed to load interface: %s\n", arg.ifname);
+		return ret;
+	}
+
+	snprintf(path, sizeof(path), "%s/%s.json", ctx->data_dir, arg.ifname);
+	ret = remove(path);
+	if (ret) {
+		ret = -errno;
+		wgm_log_err("Error: wgm_iface_cmd_del: failed to remove file: %s: %s\n", path, strerror(-ret));
+		return ret;
+	}
+
 	return 0;
 }
 
@@ -434,13 +489,15 @@ int wgm_iface_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx)
  */
 int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
+	static const uint64_t required_args = ARG_IFACE | ARG_LISTEN_PORT | ARG_PRIVATE_KEY;
+	static const uint64_t allowed_args = required_args | ARG_FORCE;
 	struct wgm_iface_arg arg;
 	struct wgm_iface iface;
 	int ret;
 
 	memset(&arg, 0, sizeof(arg));
 	memset(&iface, 0, sizeof(iface));
-	ret = wgm_create_getopt(argc, argv, &arg);
+	ret = wgm_create_getopt(argc, argv, &arg, allowed_args, required_args);
 	if (ret < 0)
 		return -1;
 
@@ -451,9 +508,7 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 			return -EEXIST;
 		}
 
-		wgm_iface_dump_json(&iface);
-		wgm_iface_save(ctx, &iface);
-		return wgm_iface_update(argc, argv, ctx);
+		return wgm_iface_cmd_update(argc, argv, ctx);
 	}
 
 	if (ret != -ENOENT) {
