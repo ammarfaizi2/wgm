@@ -16,16 +16,16 @@ struct priv_arg {
 
 static const struct priv_arg aarg[] = {
 #define ARG_IFACE (1ull << 0ull)
-	{ARG_IFACE, "iface"},
+	{ARG_IFACE, "--ifname"},
 
 #define ARG_LISTEN_PORT (1ull << 1ull)
-	{ARG_LISTEN_PORT, "listen-port"},
+	{ARG_LISTEN_PORT, "--listen-port"},
 
 #define ARG_PRIVATE_KEY (1ull << 2ull)
-	{ARG_PRIVATE_KEY, "private-key"},
+	{ARG_PRIVATE_KEY, "--private-key"},
 
 #define ARG_FORCE (1ull << 3ull)
-	{ARG_FORCE, "force"},
+	{ARG_FORCE, "--force"},
 };
 
 static const char wgm_iface_opt_short[] = "i:l:k:hf";
@@ -422,15 +422,6 @@ int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface)
 	return 0;
 }
 
-int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
-{
-	(void)argc;
-	(void)argv;
-	(void)ctx;
-	return 0;
-}
-
-
 int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	static const uint64_t required_args = ARG_IFACE;
@@ -477,6 +468,18 @@ int wgm_iface_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx)
 	return 0;
 }
 
+static int do_cmd_update(struct wgm_ctx *ctx, struct wgm_iface_arg *arg, struct wgm_iface *iface)
+{
+	if (arg->listen_port)
+		iface->listen_port = arg->listen_port;
+
+	if (arg->private_key[0])
+		strncpyl(iface->private_key, arg->private_key, sizeof(iface->private_key));
+
+	wgm_iface_dump_json(iface);
+	return wgm_iface_save(ctx, iface);
+}
+
 /*
  * "iface add" rules:
  *
@@ -508,7 +511,7 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 			return -EEXIST;
 		}
 
-		return wgm_iface_cmd_update(argc, argv, ctx);
+		return do_cmd_update(ctx, &arg, &iface);
 	}
 
 	if (ret != -ENOENT) {
@@ -523,6 +526,29 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	strncpyl(iface.private_key, arg.private_key, sizeof(iface.private_key));
 	wgm_iface_dump_json(&iface);
 	return wgm_iface_save(ctx, &iface);
+}
+
+int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	static const uint64_t required_args = ARG_IFACE;
+	static const uint64_t allowed_args = required_args | ARG_LISTEN_PORT | ARG_PRIVATE_KEY | ARG_FORCE;
+	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+	ret = wgm_create_getopt(argc, argv, &arg, allowed_args, required_args);
+	if (ret < 0)
+		return -1;
+
+	ret = wgm_iface_load(ctx, &iface, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_update: failed to load interface: %s: %s\n", arg.ifname, strerror(-ret));
+		return ret;
+	}
+
+	return do_cmd_update(ctx, &arg, &iface);
 }
 
 void wgm_iface_free(struct wgm_iface *iface)
