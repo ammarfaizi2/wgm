@@ -448,12 +448,12 @@ static char *gen_ipt_bind(const char *iface, const char *ip, const char *src)
 	size_t len;
 	char *str;
 
-	len = (size_t)snprintf(NULL, 0, fmt, iface, src, ip);
+	len = (size_t)snprintf(NULL, 0, fmt, iface, ip, src);
 	str = malloc(len + 1);
 	if (!str)
 		return NULL;
 
-	snprintf(str, len + 1, fmt, iface, src, ip);
+	snprintf(str, len + 1, fmt, iface, ip, src);
 	return str;
 }
 
@@ -476,19 +476,14 @@ static int wgm_iface_gen_wg_conf_handle(FILE *fp, const struct wgm_iface *iface)
 	}
 
 	fprintf(fp, "\n");
-	fprintf(fp, "AllowedIPs = ");
-	for (i = 0; i < iface->allowed_ips.nr; i++) {
-		fprintf(fp, "%s", iface->allowed_ips.arr[i]);
-		if (i + 1 < iface->allowed_ips.nr)
-			fprintf(fp, ", ");
-	}
 
 	fprintf(fp, "\n");
-	fprintf(fp, "PostUp   = iptables -N WGM_%s || true\n", iface->ifname);
-	fprintf(fp, "PostDown = iptables -F WGM_%s || true\n", iface->ifname);
-	fprintf(fp, "PostDown = iptables -X WGM_%s || true\n", iface->ifname);
-	fprintf(fp, "PostUp   = iptables -A FORWARD -i %s -j WGM_%s\n", iface->ifname, iface->ifname);
-	fprintf(fp, "PostDown = iptables -D FORWARD -i %s -j WGM_%s || true\n", iface->ifname, iface->ifname);
+	fprintf(fp, "PostUp   = iptables -t nat -N WGM_%s || true\n", iface->ifname);
+	fprintf(fp, "PostDown = iptables -t nat -D POSTROUTING -s %s ! -d %s -j WGM_%s\n", iface->addresses.arr[0], iface->addresses.arr[0], iface->ifname);
+	fprintf(fp, "PostDown = iptables -t nat -F WGM_%s || true\n", iface->ifname);
+	fprintf(fp, "PostDown = iptables -t nat -X WGM_%s || true\n", iface->ifname);
+	fprintf(fp, "PostUp   = iptables -t filter -I FORWARD -i %s -j ACCEPT\n", iface->ifname);
+	fprintf(fp, "PostUp   = iptables -t filter -I FORWARD -o %s -j ACCEPT\n", iface->ifname);
 
 	for (i = 0; i < iface->peers.nr; i++) {
 		struct wgm_peer	*peer = &iface->peers.peers[i];
@@ -508,10 +503,7 @@ static int wgm_iface_gen_wg_conf_handle(FILE *fp, const struct wgm_iface *iface)
 	}
 
 	fprintf(fp, "PostUp   = iptables -t nat -A WGM_%s -j MASQUERADE\n", iface->ifname);
-	fprintf(fp, "PostUp   = iptables -t nat -I POSTROUTING -o %s -j WGM_%s\n", iface->ifname, iface->ifname);
-	fprintf(fp, "PostDown = iptables -t nat -D POSTROUTING -o %s -j WGM_%s || true\n", iface->ifname, iface->ifname);
-	fprintf(fp, "PostUp   = iptables -t nat -I POSTROUTING -i %s -j WGM_%s\n", iface->ifname, iface->ifname);
-	fprintf(fp, "PostDown = iptables -t nat -D POSTROUTING -i %s -j WGM_%s || true\n", iface->ifname, iface->ifname);
+	fprintf(fp, "PostUp   = iptables -t nat -I POSTROUTING -s %s ! -d %s -j WGM_%s\n", iface->addresses.arr[0], iface->addresses.arr[0], iface->ifname);
 
 	for (i = 0; i < iface->peers.nr; i++) {
 		const char *bi;
