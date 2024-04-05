@@ -454,6 +454,22 @@ int wgm_iface_del_peer_by_pubkey(struct wgm_iface *iface, const char *pubkey)
 	return -ENOENT;
 }
 
+int wgm_iface_get_peer_by_pubkey(const struct wgm_iface *iface, const char *pubkey,
+				 struct wgm_peer **peer)
+{
+	size_t i;
+
+	for (i = 0; i < iface->peers.nr; i++) {
+		if (!strcmp(iface->peers.peers[i].public_key, pubkey)) {
+			*peer = &iface->peers.peers[i];
+			return 0;
+		}
+	}
+
+	wgm_log_err("Error: wgm_iface_get_peer_by_pubkey: Peer with public key '%s' not found\n", pubkey);
+	return -ENOENT;
+}
+
 void wgm_iface_free(struct wgm_iface *iface)
 {
 	wgm_free_str_array(&iface->addresses);
