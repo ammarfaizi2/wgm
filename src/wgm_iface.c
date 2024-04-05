@@ -683,11 +683,11 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 			ret = -EEXIST;
 			goto out;
 		}
-	}
-
-	if (ret != -ENOENT) {
-		wgm_log_err("Error: wgm_iface_cmd_add: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
-		goto out;
+	} else {
+		if (ret != -ENOENT) {
+			wgm_log_err("Error: wgm_iface_cmd_add: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+			goto out;
+		}
 	}
 
 	move_arg_to_iface(&iface, &arg, out_args);
