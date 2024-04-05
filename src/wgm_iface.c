@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "wgm.h"
 #include "wgm_iface.h"
+#include "wgm_peer.h"
 
 #include <getopt.h>
 
@@ -380,7 +381,77 @@ static int wgm_iface_load_from_json(struct wgm_iface *iface, const json_object *
 
 int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer)
 {
+	struct wgm_peer	*new_peers;
+	size_t new_nr;
+	int ret;
+
+	new_nr = iface->peers.nr + 1;
+	new_peers = realloc(iface->peers.peers, new_nr * sizeof(*new_peers));
+	if (!new_peers) {
+		wgm_log_err("Error: wgm_iface_add_peer: Failed to allocate memory\n");
+		return -ENOMEM;
+	}
+
+	iface->peers.peers = new_peers;
+	ret = wgm_peer_copy(&new_peers[iface->peers.nr], peer);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_add_peer: Failed to copy peer data\n");
+		return ret;
+	}
+
+	iface->peers.nr = new_nr;
 	return 0;
+}
+
+int wgm_iface_del_peer(struct wgm_iface *iface, size_t idx)
+{
+	struct wgm_peer *new_peers;
+	size_t new_nr;
+
+	if (idx >= iface->peers.nr) {
+		wgm_log_err("Error: wgm_iface_del_peer: Invalid peer index\n");
+		return -EINVAL;
+	}
+
+	wgm_free_peer(&iface->peers.peers[idx]);
+
+	new_nr = iface->peers.nr - 1;
+	if (!new_nr) {
+		free(iface->peers.peers);
+		iface->peers.peers = NULL;
+		iface->peers.nr = 0;
+		return 0;
+	}
+
+	memmove(&iface->peers.peers[idx], &iface->peers.peers[idx + 1],
+		(new_nr - idx) * sizeof(*iface->peers.peers));
+
+	iface->peers.nr = new_nr;
+	new_peers = realloc(iface->peers.peers, new_nr * sizeof(*new_peers));
+	if (new_peers)
+		iface->peers.peers = new_peers;
+
+	return 0;
+}
+
+int wgm_iface_del_peer_by_pubkey(struct wgm_iface *iface, const char *pubkey)
+{
+	size_t i;
+	int ret;
+
+	for (i = 0; i < iface->peers.nr; i++) {
+		if (strcmp(iface->peers.peers[i].public_key, pubkey))
+			continue;
+
+		ret = wgm_iface_del_peer(iface, i);
+		if (ret) {
+			wgm_log_err("Error: wgm_iface_del_peer_by_pubkey: Failed to delete peer\n");
+			return ret;
+		}
+	}
+
+	wgm_log_err("Error: wgm_iface_del_peer_by_pubkey: Peer with public key '%s' not found\n", pubkey);
+	return -ENOENT;
 }
 
 void wgm_iface_free(struct wgm_iface *iface)
