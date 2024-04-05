@@ -650,7 +650,7 @@ static void move_arg_to_iface(struct wgm_iface *iface, struct wgm_iface_arg *arg
 		wgm_str_array_move(&iface->allowed_ips, &arg->allowed_ips);
 }
 
-static void wgm_free_arg(struct wgm_iface_arg *arg)
+static void wgm_iface_free_arg(struct wgm_iface_arg *arg)
 {
 	wgm_free_str_array(&arg->addresses);
 	wgm_free_str_array(&arg->allowed_ips);
@@ -694,7 +694,7 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	ret = wgm_iface_save(&iface, ctx);
 out:
 	wgm_iface_free(&iface);
-	wgm_free_arg(&arg);
+	wgm_iface_free_arg(&arg);
 	return ret;
 }
 
