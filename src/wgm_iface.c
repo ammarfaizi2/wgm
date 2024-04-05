@@ -771,11 +771,6 @@ int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
 		goto out;
 	}
 
-	if (!(out_args & (allowed_args & ~IFACE_ARG_DEV))) {
-		printf("Nothing to update\n");
-		goto out;
-	}
-
 	ret = apply_iface(&iface, &arg, out_args, ctx);
 	wgm_iface_dump_json(&iface);
 out:
