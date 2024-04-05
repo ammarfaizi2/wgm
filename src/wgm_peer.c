@@ -69,52 +69,6 @@ static int wgm_iface_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
 	if (ret)
 		return ret;
 
-	while (1) {
-		c = getopt_long(argc, argv, short_opt, long_opt, NULL);
-		if (c == -1)
-			break;
-
-		switch (c) {
-		case 'd':
-			if (wgm_iface_opt_get_dev(arg->ifname, sizeof(arg->ifname), optarg))
-				return -EINVAL;
-			out_args |= PEER_ARG_DEV;
-			break;
-		case 'p':
-			if (wgm_iface_opt_get_public_key(arg->public_key, sizeof(arg->public_key), optarg))
-				return -EINVAL;
-			out_args |= PEER_ARG_PUBLIC_KEY;
-			break;
-		case 'e':
-			if (wgm_iface_opt_get_endpoint(arg->endpoint, sizeof(arg->endpoint), optarg))
-				return -EINVAL;
-			out_args |= PEER_ARG_ENDPOINT;
-			break;
-		case 'b':
-			if (wgm_iface_opt_get_bind_ip(arg->bind_ip, sizeof(arg->bind_ip), optarg))
-				return -EINVAL;
-			out_args |= PEER_ARG_BIND_IP;
-			break;
-		case 'a':
-			if (wgm_iface_opt_get_allowed_ips(&arg->allowed_ips, optarg))
-				return -EINVAL;
-			out_args |= PEER_ARG_ALLOWED_IPS;
-			break;
-		case 'f':
-			out_args |= PEER_ARG_FORCE;
-			break;
-		case 'h':
-			out_args |= PEER_ARG_HELP;
-			wgm_peer_show_usage();
-			ret = -1;
-			goto out;
-		default:
-			wgm_log_err("Error: Invalid option '%c'\n", c);
-			ret = -EINVAL;
-			goto out;
-		}
-	}
-
 out:
 	wgm_free_getopt_long_args(long_opt, short_opt);
 	return ret;
