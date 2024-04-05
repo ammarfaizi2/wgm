@@ -985,6 +985,7 @@ int wgm_iface_copy(struct wgm_iface *dst, const struct wgm_iface *src)
 {
 	int ret;
 
+	wgm_iface_free(dst);
 	memcpy(dst->ifname, src->ifname, sizeof(dst->ifname));
 	dst->listen_port = src->listen_port;
 	dst->mtu = src->mtu;
@@ -992,12 +993,15 @@ int wgm_iface_copy(struct wgm_iface *dst, const struct wgm_iface *src)
 
 	ret = wgm_str_array_copy(&dst->addresses, &src->addresses);
 	if (ret) {
+		memset(dst, 0, sizeof(*dst));
 		wgm_log_err("Error: wgm_iface_copy: Failed to copy 'addresses' array\n");
 		return ret;
 	}
 
 	ret = wgm_str_array_copy(&dst->allowed_ips, &src->allowed_ips);
 	if (ret) {
+		wgm_str_array_free(&dst->addresses);
+		memset(dst, 0, sizeof(*dst));
 		wgm_log_err("Error: wgm_iface_copy: Failed to copy 'allowed-ips' array\n");
 		return ret;
 	}
