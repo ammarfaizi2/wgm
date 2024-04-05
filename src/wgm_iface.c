@@ -295,6 +295,24 @@ static int load_key_int(const json_object *jobj, const char *key, int *val)
 	return 0;
 }
 
+static int load_key_array(const json_object *jobj, const char *key, struct wgm_str_array *arr)
+{
+	json_object *tmp;
+	int ret;
+
+	tmp = json_object_object_get(jobj, key);
+	if (!tmp || !json_object_is_type(tmp, json_type_array))
+		return -EINVAL;
+
+	ret = wgm_json_to_str_array(arr, tmp);
+	if (ret) {
+		wgm_log_err("Error: load_key_array: Failed to parse JSON array\n");
+		return ret;
+	}
+
+	return 0;
+}
+
 static int wgm_iface_load_from_json(struct wgm_iface *iface, const json_object *jobj)
 {
 	const char *stmp;
@@ -321,7 +339,7 @@ static int wgm_iface_load_from_json(struct wgm_iface *iface, const json_object *
 		return -EINVAL;
 	}
 
-	iface->listen_port = itmp;
+	iface->listen_port = (uint16_t)itmp;
 
 	stmp = load_key_str(jobj, "private-key");
 	if (!stmp) {
@@ -332,10 +350,35 @@ static int wgm_iface_load_from_json(struct wgm_iface *iface, const json_object *
 	if (wgm_iface_opt_get_private_key(iface->private_key, sizeof(iface->private_key), stmp))
 		return -EINVAL;
 
+	ret = load_key_array(jobj, "address", &iface->addresses);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Missing 'address' field (array of strings)\n");
+		return ret;
+	}
+
+	ret = load_key_int(jobj, "mtu", &itmp);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Missing 'mtu' field (int)\n");
+		return ret;
+	}
+
+	if (itmp < 0 || itmp > UINT16_MAX) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Invalid 'mtu' value, must be in range [0, %u]\n", UINT16_MAX);
+		return -EINVAL;
+	}
+
+	iface->mtu = (uint16_t)itmp;
+
+	ret = load_key_array(jobj, "allowed-ips", &iface->allowed_ips);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Missing 'allowed-ips' field (array of strings)\n");
+		return ret;
+	}
+
 	return 0;
 }
 
-static int wgm_iface_load(struct wgm_iface *iface, struct wgm_ctx *ctx, const char *devname)
+int wgm_iface_load(struct wgm_iface *iface, struct wgm_ctx *ctx, const char *devname)
 {
 	char *path, *jstr;
 	json_object *jobj;

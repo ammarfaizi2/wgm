@@ -26,5 +26,6 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_iface_load(struct wgm_iface *iface, struct wgm_ctx *ctx, const char *devname);
 
 #endif /* #ifndef WGM__WG_IFACE_H */

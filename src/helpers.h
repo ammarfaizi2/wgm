@@ -43,4 +43,8 @@ int wgm_create_getopt_long_args(struct option **long_opt_p, char **short_opt_p,
 				const struct wgm_opt *opts, size_t nr_opts);
 void wgm_free_getopt_long_args(struct option *long_opt, char *short_opt);
 
+int wgm_json_to_str_array(struct wgm_str_array *arr, json_object *jobj);
+int wgm_str_array_to_json(json_object **jobj, const struct wgm_str_array *arr);
+void wgm_free_str_array(struct wgm_str_array *arr);
+
 #endif /* #ifndef WGM__WG_HELPERS_H */
