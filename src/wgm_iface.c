@@ -4,6 +4,7 @@
 #include "wgm_peer.h"
 
 #include <getopt.h>
+#include <dirent.h>
 
 struct wgm_iface_arg {
 	bool			force;
@@ -545,40 +546,54 @@ out_free_path:
 	return ret;
 }
 
+int wgm_iface_to_json(json_object **jobj, const struct wgm_iface *iface)
+{
+	json_object *jarr;
+	int ret;
+
+	*jobj = json_object_new_object();
+	if (!*jobj) {
+		wgm_log_err("Error: wgm_iface_to_json: Failed to create JSON object\n");
+		return -ENOMEM;
+	}
+
+	json_object_object_add(*jobj, "dev", json_object_new_string(iface->ifname));
+	json_object_object_add(*jobj, "listen-port", json_object_new_int(iface->listen_port));
+	json_object_object_add(*jobj, "private-key", json_object_new_string(iface->private_key));
+	json_object_object_add(*jobj, "mtu", json_object_new_int(iface->mtu));
+
+	ret = wgm_str_array_to_json(&jarr, &iface->addresses);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_to_json: Failed to convert 'address' array to JSON\n");
+		json_object_put(*jobj);
+		return ret;
+	}
+	json_object_object_add(*jobj, "address", jarr);
+
+	ret = wgm_str_array_to_json(&jarr, &iface->allowed_ips);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_to_json: Failed to convert 'allowed-ips' array to JSON\n");
+		json_object_put(*jobj);
+		return ret;
+	}
+	json_object_object_add(*jobj, "allowed-ips", jarr);
+
+	return 0;
+}
+
 static char *wgm_iface_to_json_str(const struct wgm_iface *iface)
 {
 	static const int json_flags = JSON_C_TO_STRING_NOSLASHESCAPE | JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY;
-	json_object *jobj, *jarr;
+	json_object *jobj;
 	const char *tmp;
 	char *jstr;
 	int ret;
 
-	jobj = json_object_new_object();
-	if (!jobj) {
-		wgm_log_err("Error: wgm_iface_to_json_str: Failed to create JSON object\n");
-		return NULL;
-	}
-
-	json_object_object_add(jobj, "dev", json_object_new_string(iface->ifname));
-	json_object_object_add(jobj, "listen-port", json_object_new_int(iface->listen_port));
-	json_object_object_add(jobj, "private-key", json_object_new_string(iface->private_key));
-	json_object_object_add(jobj, "mtu", json_object_new_int(iface->mtu));
-
-	ret = wgm_str_array_to_json(&jarr, &iface->addresses);
+	ret = wgm_iface_to_json(&jobj, iface);
 	if (ret) {
-		wgm_log_err("Error: wgm_iface_to_json_str: Failed to convert 'address' array to JSON\n");
-		json_object_put(jobj);
+		wgm_log_err("Error: wgm_iface_to_json_str: Failed to convert interface data to JSON\n");
 		return NULL;
 	}
-	json_object_object_add(jobj, "address", jarr);
-
-	ret = wgm_str_array_to_json(&jarr, &iface->allowed_ips);
-	if (ret) {
-		wgm_log_err("Error: wgm_iface_to_json_str: Failed to convert 'allowed-ips' array to JSON\n");
-		json_object_put(jobj);
-		return NULL;
-	}
-	json_object_object_add(jobj, "allowed-ips", jarr);
 
 	tmp = json_object_to_json_string_ext(jobj, json_flags);
 	if (!tmp) {
@@ -840,4 +855,186 @@ out:
 	wgm_iface_free(&iface);
 	wgm_iface_free_arg(&arg);
 	return ret;
+}
+
+int wgm_iface_cmd_list(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	static const uint64_t allowed_args = IFACE_ARG_HELP;
+
+	struct wgm_iface_array ifaces;
+	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	struct dirent *ent;
+	DIR *dir;
+	int ret;
+
+	memset(&ifaces, 0, sizeof(ifaces));
+	memset(&iface, 0, sizeof(iface));
+	memset(&arg, 0, sizeof(arg));
+
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, 0, &out_args);
+	if (ret)
+		return ret;
+
+	dir = opendir(ctx->data_dir);
+	if (!dir) {
+		ret = -errno;
+		wgm_log_err("Error: wgm_iface_cmd_list: Failed to open directory '%s': %s\n", ctx->data_dir, strerror(-ret));
+		return ret;
+	}
+
+	while ((ent = readdir(dir))) {
+		size_t len;
+		char *name;
+
+		if (ent->d_type != DT_REG)
+			continue;
+
+		name = ent->d_name;
+
+		/*
+		 * Ensure the file ends with '.json'.
+		 */
+		len = strlen(name);
+		if (len < 5 || strcmp(name + len - 5, ".json"))
+			continue;
+
+		/*
+		 * Remove the '.json' extension.
+		 */
+		name[len - 5] = '\0';
+
+		ret = wgm_iface_load(&iface, ctx, name);
+		if (ret) {
+			wgm_log_err("Error: wgm_iface_cmd_list: Failed to load interface '%s': %s\n", ent->d_name, strerror(-ret));
+			break;
+		}
+
+		ret = wgm_iface_array_add(&ifaces, &iface);
+		wgm_iface_free(&iface);
+		if (ret) {
+			wgm_log_err("Error: wgm_iface_cmd_list: Failed to add interface to array\n");
+			break;
+		}
+	}
+
+	closedir(dir);
+
+	if (!ret)
+		wgm_iface_array_dump_json(&ifaces);
+
+	wgm_iface_array_free(&ifaces);
+	return ret;
+}
+
+int wgm_iface_array_add(struct wgm_iface_array *ifaces, const struct wgm_iface *iface)
+{
+	struct wgm_iface *new_ifaces;
+	size_t new_nr;
+	int ret;
+
+	new_nr = ifaces->nr + 1;
+	new_ifaces = realloc(ifaces->ifaces, new_nr * sizeof(*new_ifaces));
+	if (!new_ifaces) {
+		wgm_log_err("Error: wgm_iface_array_add: Failed to allocate memory\n");
+		return -ENOMEM;
+	}
+
+	ifaces->ifaces = new_ifaces;
+	ret = wgm_iface_copy(&new_ifaces[ifaces->nr], iface);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_array_add: Failed to copy interface data\n");
+		return ret;
+	}
+
+	ifaces->nr = new_nr;
+	return 0;
+}
+
+int wgm_iface_array_to_json(json_object **jobj, const struct wgm_iface_array *ifaces)
+{
+	json_object *jarr;
+	size_t i;
+	int ret;
+
+	jarr = json_object_new_array();
+	if (!jarr) {
+		wgm_log_err("Error: wgm_iface_array_to_json: Failed to create JSON array\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < ifaces->nr; i++) {
+		json_object *jiface;
+
+		ret = wgm_iface_to_json(&jiface, &ifaces->ifaces[i]);
+		if (ret) {
+			wgm_log_err("Error: wgm_iface_array_to_json: Failed to convert interface data to JSON\n");
+			json_object_put(jarr);
+			return ret;
+		}
+
+		json_object_array_add(jarr, jiface);
+	}
+
+	*jobj = jarr;
+	return 0;
+}
+
+int wgm_iface_copy(struct wgm_iface *dst, const struct wgm_iface *src)
+{
+	int ret;
+
+	memcpy(dst->ifname, src->ifname, sizeof(dst->ifname));
+	dst->listen_port = src->listen_port;
+	dst->mtu = src->mtu;
+	memcpy(dst->private_key, src->private_key, sizeof(dst->private_key));
+
+	ret = wgm_str_array_copy(&dst->addresses, &src->addresses);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_copy: Failed to copy 'addresses' array\n");
+		return ret;
+	}
+
+	ret = wgm_str_array_copy(&dst->allowed_ips, &src->allowed_ips);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_copy: Failed to copy 'allowed-ips' array\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+void wgm_iface_move(struct wgm_iface *dst, struct wgm_iface *src)
+{
+	wgm_iface_free(dst);
+	memcpy(dst, src, sizeof(*dst));
+	memset(src, 0, sizeof(*src));
+}
+
+void wgm_iface_array_dump_json(const struct wgm_iface_array *ifaces)
+{
+	static const int json_flags = JSON_C_TO_STRING_NOSLASHESCAPE | JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY;
+	json_object *jobj;
+	int ret;
+
+	ret = wgm_iface_array_to_json(&jobj, ifaces);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_array_dump_json: Failed to convert interface array to JSON\n");
+		return;
+	}
+
+	printf("%s\n", json_object_to_json_string_ext(jobj, json_flags));
+	json_object_put(jobj);
+}
+
+void wgm_iface_array_free(struct wgm_iface_array *ifaces)
+{
+	size_t i;
+
+	for (i = 0; i < ifaces->nr; i++)
+		wgm_iface_free(&ifaces->ifaces[i]);
+
+	free(ifaces->ifaces);
+	memset(ifaces, 0, sizeof(*ifaces));
 }

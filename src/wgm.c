@@ -22,6 +22,7 @@ static void show_usage_iface(const char *app)
 	printf("  del    - Delete an existing WireGuard interface\n");
 	printf("  show   - Show information about a WireGuard interface\n");
 	printf("  update - Update an existing WireGuard interface\n");
+	printf("  list   - List all WireGuard interfaces\n");
 	printf("\n");
 }
 
@@ -89,6 +90,9 @@ static int wgm_ctx_run(int argc, char *argv[], struct wgm_ctx *ctx)
 
 		if (!strcmp(argv[2], "update"))
 			return wgm_iface_cmd_update(argc - 1, argv + 1, ctx);
+
+		if (!strcmp(argv[2], "list"))
+			return wgm_iface_cmd_list(argc - 1, argv + 1, ctx);
 	}
 
 	if (strcmp(argv[1], "peer") == 0) {
