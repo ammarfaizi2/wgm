@@ -629,6 +629,34 @@ int wgm_iface_save(const struct wgm_iface *iface, struct wgm_ctx *ctx)
 	return 0;
 }
 
+static void move_arg_to_iface(struct wgm_iface *iface, struct wgm_iface_arg *arg, uint64_t args)
+{
+	if (args & IFACE_ARG_DEV)
+		strncpyl(iface->ifname, arg->ifname, sizeof(iface->ifname));
+
+	if (args & IFACE_ARG_LISTEN_PORT)
+		iface->listen_port = arg->listen_port;
+
+	if (args & IFACE_ARG_PRIVATE_KEY)
+		strncpyl(iface->private_key, arg->private_key, sizeof(iface->private_key));
+
+	if (args & IFACE_ARG_ADDRESS)
+		wgm_str_array_move(&iface->addresses, &arg->addresses);
+
+	if (args & IFACE_ARG_MTU)
+		iface->mtu = arg->mtu;
+
+	if (args & IFACE_ARG_ALLOWED_IPS)
+		wgm_str_array_move(&iface->allowed_ips, &arg->allowed_ips);
+}
+
+static void wgm_free_arg(struct wgm_iface_arg *arg)
+{
+	wgm_free_str_array(&arg->addresses);
+	wgm_free_str_array(&arg->allowed_ips);
+	memset(arg, 0, sizeof(*arg));
+}
+
 int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	static const uint64_t req_args = IFACE_ARG_DEV | IFACE_ARG_LISTEN_PORT |
@@ -652,31 +680,21 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	if (!ret) {
 		if (!arg.force) {
 			wgm_log_err("Error: wgm_iface_cmd_add: Interface '%s' already exists, use --force to overwrite\n", arg.ifname);
-			wgm_iface_free(&iface);
-			return -EEXIST;
+			ret = -EEXIST;
+			goto out;
 		}
 	}
 
-	if (out_args & IFACE_ARG_DEV)
-		strncpyl(iface.ifname, arg.ifname, sizeof(iface.ifname));
+	if (ret != -ENOENT) {
+		wgm_log_err("Error: wgm_iface_cmd_add: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
 
-	if (out_args & IFACE_ARG_LISTEN_PORT)
-		iface.listen_port = arg.listen_port;
-
-	if (out_args & IFACE_ARG_PRIVATE_KEY)
-		strncpyl(iface.private_key, arg.private_key, sizeof(iface.private_key));
-
-	if (out_args & IFACE_ARG_ADDRESS)
-		wgm_str_array_move(&iface.addresses, &arg.addresses);
-
-	if (out_args & IFACE_ARG_MTU)
-		iface.mtu = arg.mtu;
-
-	if (out_args & IFACE_ARG_ALLOWED_IPS)
-		wgm_str_array_move(&iface.allowed_ips, &arg.allowed_ips);
-
+	move_arg_to_iface(&iface, &arg, out_args);
 	ret = wgm_iface_save(&iface, ctx);
+out:
 	wgm_iface_free(&iface);
+	wgm_free_arg(&arg);
 	return ret;
 }
 
