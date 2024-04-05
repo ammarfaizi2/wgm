@@ -11,14 +11,14 @@ struct wgm_iface_arg {
 	char			ifname[IFNAMSIZ];
 	uint16_t		listen_port;
 	uint16_t		mtu;
-	char			private_key[128];
+	char			private_key[256];
 	struct wgm_str_array	addresses;
 	struct wgm_str_array	allowed_ips;
 };
 
 static const struct wgm_opt options[] = {
 	#define IFACE_ARG_DEV		(1ull << 0)
-	{ IFACE_ARG_DEV,	"dev",		required_argument,	NULL,	'd' },
+	{ IFACE_ARG_DEV,		"dev",		required_argument,	NULL,	'd' },
 
 	#define IFACE_ARG_LISTEN_PORT	(1ull << 1)
 	{ IFACE_ARG_LISTEN_PORT,	"listen-port",	required_argument,	NULL,	'l' },
@@ -46,13 +46,14 @@ static const struct wgm_opt options[] = {
 
 static void wgm_iface_show_usage(void)
 {
-	printf("Usage: iface <command> [options]\n");
+	printf("Usage: iface [add|del|show|update|list] [OPTIONS]\n");
 	printf("\n");
 	printf("Commands:\n");
 	printf("  add    - Add a new WireGuard interface\n");
 	printf("  del    - Delete an existing WireGuard interface\n");
 	printf("  show   - Show information about a WireGuard interface\n");
 	printf("  update - Update an existing WireGuard interface\n");
+	printf("  list   - List all WireGuard interfaces (no options required)\n");
 	printf("\n");
 	printf("Options:\n");
 	printf("  -d, --dev <name>          Interface name\n");
@@ -66,7 +67,7 @@ static void wgm_iface_show_usage(void)
 	printf("\n");
 }
 
-static int wgm_iface_opt_get_dev(char *ifname, size_t iflen, const char *dev)
+int wgm_iface_opt_get_dev(char *ifname, size_t iflen, const char *dev)
 {
 	size_t i;
 

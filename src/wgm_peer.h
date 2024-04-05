@@ -5,8 +5,9 @@
 #include "helpers.h"
 
 struct wgm_peer {
-	char			public_key[128];
-	char			bind_ip[INET6_ADDRSTRLEN];
+	char			public_key[256];
+	char			endpoint[128];
+	char			bind_ip[16];
 	struct wgm_str_array	allowed_ips;
 };
 
