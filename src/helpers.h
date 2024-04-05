@@ -1,37 +1,45 @@
 // SPDX-License-Identifier: GPL-2.0-only
-#ifndef WGM__HELPERS_H
-#define WGM__HELPERS_H
+#ifndef WGM__WG_HELPERS_H
+#define WGM__WG_HELPERS_H
 
-#include <errno.h>
-#include <stddef.h>
+#include <stdio.h>
 #include <stdint.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <json-c/json.h>
+#include <stddef.h>
 #include <stdbool.h>
-#include <arpa/inet.h>
+#include <errno.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
+
+#include <getopt.h>
+#include <linux/if.h>
+#include <sys/types.h>
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+#endif
 
 struct wgm_str_array {
-	char		**arr;
-	size_t		nr;
+	char	**arr;
+	size_t	nr;
 };
 
-int mkdir_recursive(const char *path, mode_t mode);
-char *strncpyl(char *dest, const char *src, size_t n);
+struct wgm_ctx;
+
+struct wgm_opt {
+	uint64_t id;
+	const char *name;
+	int has_arg;
+	int *flag;
+	int val;
+};
 
 void wgm_log_err(const char *fmt, ...);
+char *strncpyl(char *dest, const char *src, size_t n);
+int wgm_parse_csv(struct wgm_str_array *arr, const char *str);
+int mkdir_recursive(const char *path, mode_t mode);
+int wgm_create_getopt_long_args(struct option **long_opt_p, char **short_opt_p,
+				const struct wgm_opt *opts, size_t nr_opts);
+void wgm_free_getopt_long_args(struct option *long_opt, char *short_opt);
 
-int wgm_parse_ifname(const char *ifname, char *buf);
-int wgm_parse_key(const char *key, char *buf, size_t size);
-
-int wgm_str_array_to_json(const struct wgm_str_array *arr, json_object **jobj);
-int wgm_json_to_str_array(struct wgm_str_array *arr, const json_object *jobj);
-void wgm_str_array_free(struct wgm_str_array *arr);
-
-void wgm_str_array_dump(const struct wgm_str_array *arr);
-
-int wgm_parse_csv(struct wgm_str_array *arr, const char *str_ips);
-
-int wgm_parse_mtu(const char *mtu, uint16_t *val);
-
-#endif /* #ifndef WGM__HELPERS_H */
+#endif /* #ifndef WGM__WG_HELPERS_H */

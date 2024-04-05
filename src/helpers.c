@@ -1,67 +1,18 @@
+// SPDX-License-Identifier: GPL-2.0-only
 
 #include "helpers.h"
 
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <json-c/json.h>
-#include <linux/if.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 
 void wgm_log_err(const char *fmt, ...)
 {
-	va_list args;
+	va_list ap;
 
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-}
-
-int load_str_array_from_json(char ***array, uint16_t *nr, const json_object *jobj)
-{
-	json_object *tmp;
-	const char *tstr;
-	size_t i;
-
-	*nr = json_object_array_length(jobj);
-	if (!*nr)
-		return 0;
-
-	*array = malloc(*nr * sizeof(char *));
-	if (!*array)
-		return -ENOMEM;
-
-	for (i = 0; i < *nr; i++) {
-		tmp = json_object_array_get_idx(jobj, i);
-		if (!tmp || !json_object_is_type(tmp, json_type_string)) {
-			wgm_log_err("Error: invalid array element\n");
-			goto err;
-		}
-
-		tstr = json_object_get_string(tmp);
-		if (!tstr) {
-			wgm_log_err("Error: invalid array element\n");
-			goto err;
-		}
-
-		(*array)[i] = strdup(tstr);
-		if (!(*array)[i]) {
-			wgm_log_err("Error: failed to allocate memory\n");
-			goto err;
-		}
-	}
-
-	return 0;
-
-err:
-	while (i--)
-		free((*array)[i]);
-
-	free(*array);
-	return -ENOMEM;
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
 }
 
 char *strncpyl(char *dest, const char *src, size_t n)
@@ -71,37 +22,11 @@ char *strncpyl(char *dest, const char *src, size_t n)
 	return dest;
 }
 
-int mkdir_recursive(const char *path, mode_t mode)
+static int __mkdir_exist_ok(const char *path, mode_t mode)
 {
-	char *p, *tmp;
 	int ret;
 
-	tmp = strdup(path);
-	if (!tmp)
-		return -ENOMEM;
-
-	p = tmp;
-	while (*p) {
-		if (*p != '/') {
-			p++;
-			continue;
-		}
-
-		*p = '\0';
-		ret = mkdir(tmp, mode);
-		if (ret < 0) {
-			ret = -errno;
-			if (ret != -EEXIST) {
-				free(tmp);
-				return ret;
-			}
-		}
-		*p = '/';
-		p++;
-	}
-
-	ret = mkdir(tmp, mode);
-	free(tmp);
+	ret = mkdir(path, mode);
 	if (ret < 0) {
 		ret = -errno;
 		if (ret != -EEXIST)
@@ -111,164 +36,91 @@ int mkdir_recursive(const char *path, mode_t mode)
 	return 0;
 }
 
-void free_str_array(char **array, size_t nr)
+int mkdir_recursive(const char *path, mode_t mode)
 {
-	size_t i;
+	char *tmp, *p;
+	int ret;
 
-	if (!array)
-		return;
+	tmp = strdup(path);
+	if (!tmp)
+		return -ENOMEM;
 
-	for (i = 0; i < nr; i++)
-		free(array[i]);
-
-	free(array);
-}
-
-json_object *json_object_new_from_str_array(char **array, uint16_t nr)
-{
-	json_object *jobj;
-	size_t i;
-
-	jobj = json_object_new_array();
-	if (!jobj)
-		return NULL;
-
-	for (i = 0; i < nr; i++)
-		json_object_array_add(jobj, json_object_new_string(array[i]));
-
-	return jobj;
-}
-
-int wgm_parse_ifname(const char *ifname, char *buf)
-{
-	size_t i, len;
-
-	if (strlen(ifname) >= IFNAMSIZ) {
-		printf("Error: interface name is too long, max length is %d\n", IFNAMSIZ - 1);
-		return -1;
-	}
-
-	strncpyl(buf, ifname, IFNAMSIZ);
-
-	/*
-	 * Validate the interface name:
-	 *   - Must be a valid interface name.
-	 *   - Valid characters: [a-zA-Z0-9\-]
-	 */
-	len = strlen(buf);
-	for (i = 0; i < len; i++) {
-		if ((buf[i] >= 'a' && buf[i] <= 'z') ||
-		    (buf[i] >= 'A' && buf[i] <= 'Z') ||
-		    (buf[i] >= '0' && buf[i] <= '9') ||
-		    buf[i] == '-') {
+	for (p = tmp + 1; *p; p++) {
+		if (*p != '/')
 			continue;
-		}
-
-		printf("Error: invalid interface name: %s\n", buf);
-		return -1;
+		
+		*p = '\0';
+		ret = __mkdir_exist_ok(tmp, mode);
+		if (ret < 0)
+			goto out;
+		*p = '/';
 	}
 
-	return 0;
+	ret = __mkdir_exist_ok(tmp, mode);
+out:
+	free(tmp);
+	return ret;
 }
 
-int wgm_parse_key(const char *key, char *buf, size_t size)
+int wgm_create_getopt_long_args(struct option **long_opt_p, char **short_opt_p,
+				const struct wgm_opt *opts, size_t nr_opts)
 {
-	if (strlen(key) >= size) {
-		printf("Error: private key is too long, max length is %zu\n", size - 1);
-		return -1;
-	}
+	struct option *lo;
+	size_t i, j;
+	char *so;
 
-	strncpy(buf, key, size - 1);
-	buf[size - 1] = '\0';
-	return 0;
-}
-
-int wgm_str_array_to_json(const struct wgm_str_array *arr, json_object **jobj)
-{
-	json_object *ret;
-	size_t i;
-
-	ret = json_object_new_array();
-	if (!ret)
+	lo = malloc(sizeof(*lo) * (nr_opts + 1));
+	if (!lo)
 		return -ENOMEM;
 
-	for (i = 0; i < arr->nr; i++) {
-		if (json_object_array_add(ret, json_object_new_string(arr->arr[i])) < 0) {
-			wgm_log_err("Error: wgm_str_array_to_json: failed to add string to JSON array\n");
-			json_object_put(ret);
-			return -ENOMEM;
-		}
-	}
-
-	*jobj = ret;
-	return 0;
-}
-
-int wgm_json_to_str_array(struct wgm_str_array *arr, const json_object *jobj)
-{
-	size_t i;
-
-	if (!json_object_is_type(jobj, json_type_array)) {
-		wgm_log_err("Error: wgm_json_to_str_array: JSON object is not an array\n");
-		return -EINVAL;
-	}
-
-	arr->nr = json_object_array_length(jobj);
-	if (!arr->nr)
-		return 0;
-
-	arr->arr = malloc(arr->nr * sizeof(char *));
-	if (!arr->arr)
+	so = malloc(nr_opts * 2 + 1);
+	if (!so) {
+		free(lo);
 		return -ENOMEM;
-
-	for (i = 0; i < arr->nr; i++) {
-		json_object *tmp = json_object_array_get_idx(jobj, i);
-
-		if (!json_object_is_type(tmp, json_type_string)) {
-			wgm_log_err("Error: wgm_json_to_str_array: invalid JSON array element\n");
-			goto err;
-		}
-
-		arr->arr[i] = strdup(json_object_get_string(tmp));
-		if (!arr->arr[i]) {
-			wgm_log_err("Error: wgm_json_to_str_array: failed to allocate memory\n");
-			goto err;
-		}
 	}
 
+	j = 0;
+	for (i = 0; i < nr_opts; i++) {
+		if (!opts[i].name)
+			break;
+
+		char *name = strdup(opts[i].name);
+		if (!name)
+			goto out_free;
+
+		lo[i].name = name;
+		lo[i].has_arg = opts[i].has_arg;
+		lo[i].flag = opts[i].flag;
+		lo[i].val = opts[i].val;
+		so[j++] = opts[i].val;
+		if (opts[i].has_arg != no_argument)
+			so[j++] = ':';
+	}
+
+	so[j] = '\0';
+	memset(&lo[i], 0, sizeof(*lo));
+	*long_opt_p = lo;
+	*short_opt_p = so;
 	return 0;
 
-err:
+out_free:
 	while (i--)
-		free(arr->arr[i]);
+		free((char *)lo[i].name);
 
-	free(arr->arr);
+	free(so);
+	free(lo);
 	return -ENOMEM;
 }
 
-void wgm_str_array_free(struct wgm_str_array *arr)
+void wgm_free_getopt_long_args(struct option *long_opt, char *short_opt)
 {
 	size_t i;
 
-	if (!arr || !arr->arr)
-		return;
+	for (i = 0; long_opt[i].name; i++)
+		free((char *)long_opt[i].name);
 
-	for (i = 0; i < arr->nr; i++)
-		free(arr->arr[i]);
-
-	free(arr->arr);
-	memset(arr, 0, sizeof(*arr));
-}
-
-void wgm_str_array_dump(const struct wgm_str_array *arr)
-{
-	size_t i;
-
-	if (!arr || !arr->arr)
-		return;
-
-	for (i = 0; i < arr->nr; i++)
-		printf("  %s\n", arr->arr[i]);
+	free(short_opt);
+	free(long_opt);
 }
 
 int wgm_parse_csv(struct wgm_str_array *arr, const char *str_ips)
@@ -326,19 +178,4 @@ out:
 
 	free(tmp);
 	return ret;
-}
-
-int wgm_parse_mtu(const char *mtu, uint16_t *val)
-{
-	char *endptr;
-	unsigned long long tmp;
-
-	tmp = strtoull(mtu, &endptr, 10);
-	if (*endptr || tmp > UINT16_MAX) {
-		printf("Error: invalid MTU value: %s\n", mtu);
-		return -1;
-	}
-
-	*val = tmp;
-	return 0;
 }

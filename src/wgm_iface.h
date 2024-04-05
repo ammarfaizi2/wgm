@@ -2,11 +2,7 @@
 #ifndef WGM__WG_IFACE_H
 #define WGM__WG_IFACE_H
 
-#include "wgm.h"
 #include "helpers.h"
-
-#include <stdint.h>
-#include <linux/if.h>
 
 struct wgm_peer;
 
@@ -16,42 +12,19 @@ struct wgm_peer_array {
 };
 
 struct wgm_iface {
-	char		ifname[IFNAMSIZ];
-	uint16_t	listen_port;
-	uint16_t	mtu;
-	char		private_key[128];
+	char			ifname[IFNAMSIZ];
+	uint16_t		listen_port;
+	uint16_t		mtu;
+	char			private_key[128];
 
-	struct wgm_str_array addresses;
-	struct wgm_str_array allowed_ips;
-	struct wgm_peer_array peers;
-};
-
-struct wgm_iface_arg {
-	bool		force;
-	char		ifname[IFNAMSIZ];
-	uint16_t	listen_port;
-	uint16_t	mtu;
-	char		private_key[128];
-	struct wgm_str_array addresses;
-	struct wgm_str_array allowed_ips;
+	struct wgm_str_array	addresses;
+	struct wgm_str_array	allowed_ips;
+	struct wgm_peer_array	peers;
 };
 
 int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx);
-
-int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer);
-int wgm_iface_del_peer(struct wgm_iface *iface, const char *public_key);
-int wgm_iface_update_peer(struct wgm_iface *iface, const struct wgm_peer *peer);
-
-int wgm_iface_load(struct wgm_ctx *ctx, struct wgm_iface *iface, const char *ifname);
-int wgm_iface_save(struct wgm_ctx *ctx, const struct wgm_iface *iface);
-
-void wgm_peer_array_free(struct wgm_peer_array *peers);
-void wgm_peer_array_dump(const struct wgm_peer_array *peers);
-void wgm_iface_dump(const struct wgm_iface *iface);
-void wgm_iface_dump_json(const struct wgm_iface *iface);
-void wgm_iface_free(struct wgm_iface *iface);
 
 #endif /* #ifndef WGM__WG_IFACE_H */
