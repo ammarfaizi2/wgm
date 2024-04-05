@@ -10,6 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <json-c/json.h>
 
 #include <getopt.h>
 #include <linux/if.h>

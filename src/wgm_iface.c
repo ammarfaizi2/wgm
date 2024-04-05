@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
+#include "wgm.h"
 #include "wgm_iface.h"
 
 #include <getopt.h>
@@ -171,6 +172,7 @@ static int wgm_iface_getopt(int argc, char *argv[], struct wgm_ctx *ctx,
 	uint64_t out_args = 0;
 	char *short_opt;
 	int c, ret;
+	size_t i;
 
 	ret = wgm_create_getopt_long_args(&long_opt, &short_opt, options,
 					  ARRAY_SIZE(options));
@@ -214,9 +216,9 @@ static int wgm_iface_getopt(int argc, char *argv[], struct wgm_ctx *ctx,
 			out_args |= IFACE_ARG_ALLOWED_IPS;
 			break;
 		case 'h':
-			wgm_iface_show_usage(argv[0]);
 			out_args |= IFACE_ARG_HELP;
-			ret = 1;
+			wgm_iface_show_usage(argv[0]);
+			ret = -1;
 			goto out;
 		case 'f':
 			arg->force = true;
@@ -229,9 +231,162 @@ static int wgm_iface_getopt(int argc, char *argv[], struct wgm_ctx *ctx,
 		}
 	}
 
+	for (i = 0; i < ARRAY_SIZE(options); i++) {
+		const char *name = options[i].name;
+		uint64_t cid = options[i].id;
+
+		if ((cid & out_args) && !(cid & allowed_args)) {
+			wgm_log_err("Error: Option '--%s' is not allowed\n\n", name);
+			wgm_iface_show_usage(argv[0]);
+			ret = -EINVAL;
+			goto out;
+		}
+
+		if ((cid & required_args) && !(cid & out_args)) {
+			wgm_log_err("Error: Option '--%s' is required\n\n", name);
+			wgm_iface_show_usage(argv[0]);
+			ret = -EINVAL;
+			goto out;
+		}
+	}
+
 	*out_args_p = out_args;
 out:
 	wgm_free_getopt_long_args(long_opt, short_opt);
+	return ret;
+}
+
+static char *wgm_iface_get_file_path(struct wgm_ctx *ctx, const char *devname)
+{
+	char *path;
+	size_t len;
+
+	len = strlen(ctx->data_dir) + strlen(devname) + 2;
+	path = malloc(len);
+	if (!path) {
+		wgm_log_err("Error: wgm_iface_get_file_path: Failed to allocate memory\n");
+		return NULL;
+	}
+
+	snprintf(path, len, "%s/%s", ctx->data_dir, devname);
+	return path;
+}
+
+static const char *load_key_str(const json_object *jobj, const char *key)
+{
+	json_object *tmp;
+
+	tmp = json_object_object_get(jobj, key);
+	if (!tmp || !json_object_is_type(tmp, json_type_string))
+		return NULL;
+
+	return json_object_get_string(tmp);
+}
+
+static int load_key_int(const json_object *jobj, const char *key, int *val)
+{
+	json_object *tmp;
+
+	tmp = json_object_object_get(jobj, key);
+	if (!tmp || !json_object_is_type(tmp, json_type_int))
+		return -EINVAL;
+
+	*val = json_object_get_int(tmp);
+	return 0;
+}
+
+static int wgm_iface_load_from_json(struct wgm_iface *iface, const json_object *jobj)
+{
+	const char *stmp;
+	int itmp;
+	int ret;
+
+	stmp = load_key_str(jobj, "dev");
+	if (!stmp) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Missing 'dev' field (string)\n");
+		return -EINVAL;
+	}
+
+	if (wgm_iface_opt_get_dev(iface->ifname, sizeof(iface->ifname), stmp))
+		return -EINVAL;
+
+	ret = load_key_int(jobj, "listen-port", &itmp);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Missing 'listen-port' field (int)\n");
+		return ret;
+	}
+
+	if (itmp < 0 || itmp > UINT16_MAX) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Invalid 'listen-port' value, must be in range [0, %u]\n", UINT16_MAX);
+		return -EINVAL;
+	}
+
+	iface->listen_port = itmp;
+
+	stmp = load_key_str(jobj, "private-key");
+	if (!stmp) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Missing 'private-key' field (string)\n");
+		return -EINVAL;
+	}
+
+	if (wgm_iface_opt_get_private_key(iface->private_key, sizeof(iface->private_key), stmp))
+		return -EINVAL;
+
+	return 0;
+}
+
+static int wgm_iface_load(struct wgm_iface *iface, struct wgm_ctx *ctx, const char *devname)
+{
+	char *path, *jstr;
+	json_object *jobj;
+	size_t len;
+	FILE *fp;
+	int ret;
+
+	path = wgm_iface_get_file_path(ctx, devname);
+	if (!path)
+		return -ENOMEM;
+
+	fp = fopen(path, "rb");
+	if (!fp) {
+		ret = -errno;
+		wgm_log_err("Error: wgm_iface_load: Failed to open file '%s': %s\n", path, strerror(-ret));
+		goto out_free_path;
+	}
+
+	fseek(fp, 0, SEEK_END);
+	len = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	jstr = malloc(len + 1);
+	if (!jstr) {
+		ret = -ENOMEM;
+		wgm_log_err("Error: wgm_iface_load: Failed to allocate memory\n");
+		goto out_free_fp;
+	}
+
+	if (fread(jstr, 1, len, fp) != len) {
+		ret = -EIO;
+		wgm_log_err("Error: wgm_iface_load: Failed to read file '%s': %s\n", path, strerror(-ret));
+		goto out_free_jstr;
+	}
+
+	jstr[len] = '\0';
+	jobj = json_tokener_parse(jstr);
+	if (!jobj) {
+		ret = -EINVAL;
+		wgm_log_err("Error: wgm_iface_load: Failed to parse JSON data\n");
+		goto out_free_jstr;
+	}
+
+	ret = wgm_iface_load_from_json(iface, jobj);
+	json_object_put(jobj);
+out_free_jstr:
+	free(jstr);
+out_free_fp:
+	fclose(fp);
+out_free_path:
+	free(path);
 	return ret;
 }
 
@@ -243,15 +398,18 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	static const uint64_t allowed_args = req_args | IFACE_ARG_HELP | IFACE_ARG_FORCE;
 
 	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
 	uint64_t out_args = 0;
 	int ret;
 
 	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+
 	ret = wgm_iface_getopt(argc, argv, ctx, &arg, allowed_args, req_args, &out_args);
 	if (ret)
 		return ret;
 
-	
+	return 0;
 }
 
 int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
