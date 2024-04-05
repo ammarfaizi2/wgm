@@ -14,6 +14,6 @@ int wgm_peer_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_peer_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_peer_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_peer_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx);
-int wgm_peer_copy(struct wgm_peer *dst, struct wgm_peer *src);
+int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src);
 
 #endif /* #ifndef WGM__WG_PEER_H */

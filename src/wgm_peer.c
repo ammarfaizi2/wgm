@@ -22,7 +22,7 @@ int wgm_peer_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
 	return 0;
 }
 
-int wgm_peer_copy(struct wgm_peer *dst, struct wgm_peer *src)
+int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src)
 {
 	memcpy(dst->public_key, src->public_key, sizeof(dst->public_key));
 	memcpy(dst->bind_ip, src->bind_ip, sizeof(dst->bind_ip));
