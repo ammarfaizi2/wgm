@@ -15,6 +15,7 @@
 #include <getopt.h>
 #include <linux/if.h>
 #include <sys/types.h>
+#include <arpa/inet.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -46,5 +47,8 @@ void wgm_free_getopt_long_args(struct option *long_opt, char *short_opt);
 int wgm_json_to_str_array(struct wgm_str_array *arr, json_object *jobj);
 int wgm_str_array_to_json(json_object **jobj, const struct wgm_str_array *arr);
 void wgm_free_str_array(struct wgm_str_array *arr);
+int wgm_str_array_copy(struct wgm_str_array *dst, const struct wgm_str_array *src);
+int wgm_str_array_add(struct wgm_str_array *arr, const char *str);
+int wgm_str_array_del(struct wgm_str_array *arr, size_t idx);
 
 #endif /* #ifndef WGM__WG_HELPERS_H */

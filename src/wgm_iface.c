@@ -378,6 +378,18 @@ static int wgm_iface_load_from_json(struct wgm_iface *iface, const json_object *
 	return 0;
 }
 
+int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer)
+{
+	return 0;
+}
+
+void wgm_iface_free(struct wgm_iface *iface)
+{
+	wgm_free_str_array(&iface->addresses);
+	wgm_free_str_array(&iface->allowed_ips);
+	memset(iface, 0, sizeof(*iface));
+}
+
 int wgm_iface_load(struct wgm_iface *iface, struct wgm_ctx *ctx, const char *devname)
 {
 	char *path, *jstr;
@@ -400,6 +412,12 @@ int wgm_iface_load(struct wgm_iface *iface, struct wgm_ctx *ctx, const char *dev
 	fseek(fp, 0, SEEK_END);
 	len = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
+
+	if (!len) {
+		ret = -EINVAL;
+		wgm_log_err("Error: wgm_iface_load: File '%s' is empty\n", path);
+		goto out_free_fp;
+	}
 
 	jstr = malloc(len + 1);
 	if (!jstr) {
@@ -452,6 +470,11 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	if (ret)
 		return ret;
 
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret)
+		return ret;
+
+	wgm_iface_free(&iface);
 	return 0;
 }
 

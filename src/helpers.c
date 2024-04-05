@@ -266,3 +266,72 @@ void wgm_free_str_array(struct wgm_str_array *arr)
 	free(arr->arr);
 	memset(arr, 0, sizeof(*arr));
 }
+
+int wgm_str_array_copy(struct wgm_str_array *dst, const struct wgm_str_array *src)
+{
+	char **arr;
+	size_t i;
+
+	arr = malloc(src->nr * sizeof(char *));
+	if (!arr)
+		return -ENOMEM;
+
+	for (i = 0; i < src->nr; i++) {
+		arr[i] = strdup(src->arr[i]);
+		if (!arr[i]) {
+			while (i--)
+				free(arr[i]);
+			free(arr);
+			return -ENOMEM;
+		}
+	}
+
+	dst->arr = arr;
+	dst->nr = src->nr;
+	return 0;
+}
+
+int wgm_str_array_add(struct wgm_str_array *arr, const char *str)
+{
+	char *dstr, **new_arr;
+	size_t new_nr;
+
+	dstr = strdup(str);
+	if (!dstr)
+		return -ENOMEM;
+
+	new_nr = arr->nr + 1;
+	new_arr = realloc(arr->arr, new_nr * sizeof(char *));
+	if (!new_arr) {
+		free(dstr);
+		return -ENOMEM;
+	}
+
+	new_arr[new_nr - 1] = dstr;
+	arr->arr = new_arr;
+	arr->nr = new_nr;
+	return 0;
+}
+
+int wgm_str_array_del(struct wgm_str_array *arr, size_t idx)
+{
+	if (idx >= arr->nr)
+		return -EINVAL;
+
+	free(arr->arr[idx]);
+	memmove(&arr->arr[idx], &arr->arr[idx + 1], (arr->nr - idx - 1) * sizeof(char *));
+	arr->nr--;
+
+	if (!arr->nr) {
+		free(arr->arr);
+		memset(arr, 0, sizeof(*arr));
+	} else {
+		char **new_arr;
+
+		new_arr = realloc(arr->arr, arr->nr * sizeof(char *));
+		if (new_arr)
+			arr->arr = new_arr;
+	}
+
+	return 0;
+}
