@@ -50,5 +50,6 @@ void wgm_free_str_array(struct wgm_str_array *arr);
 int wgm_str_array_copy(struct wgm_str_array *dst, const struct wgm_str_array *src);
 int wgm_str_array_add(struct wgm_str_array *arr, const char *str);
 int wgm_str_array_del(struct wgm_str_array *arr, size_t idx);
+int wgm_str_array_move(struct wgm_str_array *dst, struct wgm_str_array *src);
 
 #endif /* #ifndef WGM__WG_HELPERS_H */

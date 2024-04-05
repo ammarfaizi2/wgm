@@ -261,15 +261,24 @@ static char *wgm_iface_get_file_path(struct wgm_ctx *ctx, const char *devname)
 {
 	char *path;
 	size_t len;
+	int ret;
 
-	len = strlen(ctx->data_dir) + strlen(devname) + 2;
+	len = strlen(ctx->data_dir) + strlen(devname) + 7;
 	path = malloc(len);
 	if (!path) {
 		wgm_log_err("Error: wgm_iface_get_file_path: Failed to allocate memory\n");
 		return NULL;
 	}
 
-	snprintf(path, len, "%s/%s", ctx->data_dir, devname);
+	ret = mkdir_recursive(ctx->data_dir, 0700);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_get_file_path: Failed to create directory '%s': %s\n",
+			    ctx->data_dir, strerror(-ret));
+		free(path);
+		return NULL;
+	}
+
+	snprintf(path, len, "%s/%s.json", ctx->data_dir, devname);
 	return path;
 }
 
@@ -413,7 +422,7 @@ int wgm_iface_del_peer(struct wgm_iface *iface, size_t idx)
 		return -EINVAL;
 	}
 
-	wgm_free_peer(&iface->peers.peers[idx]);
+	wgm_peer_free(&iface->peers.peers[idx]);
 
 	new_nr = iface->peers.nr - 1;
 	if (!new_nr) {
@@ -492,7 +501,6 @@ int wgm_iface_load(struct wgm_iface *iface, struct wgm_ctx *ctx, const char *dev
 	fp = fopen(path, "rb");
 	if (!fp) {
 		ret = -errno;
-		wgm_log_err("Error: wgm_iface_load: Failed to open file '%s': %s\n", path, strerror(-ret));
 		goto out_free_path;
 	}
 
@@ -501,8 +509,7 @@ int wgm_iface_load(struct wgm_iface *iface, struct wgm_ctx *ctx, const char *dev
 	fseek(fp, 0, SEEK_SET);
 
 	if (!len) {
-		ret = -EINVAL;
-		wgm_log_err("Error: wgm_iface_load: File '%s' is empty\n", path);
+		ret = -ENOENT;
 		goto out_free_fp;
 	}
 
@@ -538,6 +545,90 @@ out_free_path:
 	return ret;
 }
 
+static char *wgm_iface_to_json_str(const struct wgm_iface *iface)
+{
+	static const int json_flags = JSON_C_TO_STRING_NOSLASHESCAPE | JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY;
+	json_object *jobj, *jarr;
+	const char *tmp;
+	char *jstr;
+	int ret;
+
+	jobj = json_object_new_object();
+	if (!jobj) {
+		wgm_log_err("Error: wgm_iface_to_json_str: Failed to create JSON object\n");
+		return NULL;
+	}
+
+	json_object_object_add(jobj, "dev", json_object_new_string(iface->ifname));
+	json_object_object_add(jobj, "listen-port", json_object_new_int(iface->listen_port));
+	json_object_object_add(jobj, "private-key", json_object_new_string(iface->private_key));
+	json_object_object_add(jobj, "mtu", json_object_new_int(iface->mtu));
+
+	ret = wgm_str_array_to_json(&jarr, &iface->addresses);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_to_json_str: Failed to convert 'address' array to JSON\n");
+		json_object_put(jobj);
+		return NULL;
+	}
+	json_object_object_add(jobj, "address", jarr);
+
+	ret = wgm_str_array_to_json(&jarr, &iface->allowed_ips);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_to_json_str: Failed to convert 'allowed-ips' array to JSON\n");
+		json_object_put(jobj);
+		return NULL;
+	}
+	json_object_object_add(jobj, "allowed-ips", jarr);
+
+	tmp = json_object_to_json_string_ext(jobj, json_flags);
+	if (!tmp) {
+		wgm_log_err("Error: wgm_iface_to_json_str: Failed to convert JSON object to string\n");
+		json_object_put(jobj);
+		return NULL;
+	}
+
+	jstr = strdup(tmp);
+	json_object_put(jobj);
+	if (!jstr)
+		wgm_log_err("Error: wgm_iface_to_json_str: Failed to allocate memory\n");
+
+	return jstr;
+}
+
+int wgm_iface_save(const struct wgm_iface *iface, struct wgm_ctx *ctx)
+{
+	char *path, *jstr;
+	FILE *fp;
+
+	path = wgm_iface_get_file_path(ctx, iface->ifname);
+	if (!path)
+		return -ENOMEM;
+
+	fp = fopen(path, "wb");
+	if (!fp) {
+		int ret = -errno;
+		wgm_log_err("Error: wgm_iface_save: Failed to open file '%s': %s\n", path, strerror(-ret));
+		free(path);
+		return ret;
+	}
+
+	jstr = wgm_iface_to_json_str(iface);
+	if (!jstr) {
+		wgm_log_err("Error: wgm_iface_save: Failed to convert interface data to JSON\n");
+		fclose(fp);
+		free(path);
+		return -ENOMEM;
+	}
+
+	fputs(jstr, fp);
+	fputc('\n', fp);
+
+	free(jstr);
+	fclose(fp);
+	free(path);
+	return 0;
+}
+
 int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	static const uint64_t req_args = IFACE_ARG_DEV | IFACE_ARG_LISTEN_PORT |
@@ -558,11 +649,35 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 		return ret;
 
 	ret = wgm_iface_load(&iface, ctx, arg.ifname);
-	if (ret)
-		return ret;
+	if (!ret) {
+		if (!arg.force) {
+			wgm_log_err("Error: wgm_iface_cmd_add: Interface '%s' already exists, use --force to overwrite\n", arg.ifname);
+			wgm_iface_free(&iface);
+			return -EEXIST;
+		}
+	}
 
+	if (out_args & IFACE_ARG_DEV)
+		strncpyl(iface.ifname, arg.ifname, sizeof(iface.ifname));
+
+	if (out_args & IFACE_ARG_LISTEN_PORT)
+		iface.listen_port = arg.listen_port;
+
+	if (out_args & IFACE_ARG_PRIVATE_KEY)
+		strncpyl(iface.private_key, arg.private_key, sizeof(iface.private_key));
+
+	if (out_args & IFACE_ARG_ADDRESS)
+		wgm_str_array_move(&iface.addresses, &arg.addresses);
+
+	if (out_args & IFACE_ARG_MTU)
+		iface.mtu = arg.mtu;
+
+	if (out_args & IFACE_ARG_ALLOWED_IPS)
+		wgm_str_array_move(&iface.allowed_ips, &arg.allowed_ips);
+
+	ret = wgm_iface_save(&iface, ctx);
 	wgm_iface_free(&iface);
-	return 0;
+	return ret;
 }
 
 int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)

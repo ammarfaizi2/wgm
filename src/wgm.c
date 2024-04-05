@@ -6,9 +6,17 @@
 
 #include <stdlib.h>
 
+static void show_usage(const char *app)
+{
+	printf("Usage: %s <command> [options]\n\n", app);
+	printf("Commands:\n");
+	printf("  iface - Manage WireGuard interfaces\n");
+	printf("  peer  - Manage WireGuard peers\n");
+}
+
 static void show_usage_iface(const char *app)
 {
-	printf("Usage: %s iface [command] [options]\n", app);
+	printf("Usage: %s iface [command] [options]\n\n", app);
 	printf("Commands:\n");
 	printf("  add    - Add a new WireGuard interface\n");
 	printf("  del    - Delete an existing WireGuard interface\n");
@@ -19,7 +27,7 @@ static void show_usage_iface(const char *app)
 
 static void show_usage_peer(const char *app)
 {
-	printf("Usage: %s peer [command] [options]\n", app);
+	printf("Usage: %s peer [command] [options]\n\n", app);
 	printf("Commands:\n");
 	printf("  add    - Add a new peer to a WireGuard interface\n");
 	printf("  del    - Delete an existing peer from a WireGuard interface\n");
@@ -102,7 +110,8 @@ static int wgm_ctx_run(int argc, char *argv[], struct wgm_ctx *ctx)
 			return wgm_peer_cmd_update(argc - 1, argv + 1, ctx);
 	}
 
-	fprintf(stderr, "Error: unknown command: %s\n", argv[1]);
+	fprintf(stderr, "Error: unknown command: %s\n\n", argv[1]);
+	show_usage(argv[0]);
 	return 1;
 }
 
@@ -112,7 +121,7 @@ int main(int argc, char *argv[])
 	int ret;
 
 	if (argc == 1) {
-		fprintf(stderr, "Usage: %s <command> [options]\n", argv[0]);
+		show_usage(argv[0]);
 		return 1;
 	}
 

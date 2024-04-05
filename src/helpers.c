@@ -335,3 +335,11 @@ int wgm_str_array_del(struct wgm_str_array *arr, size_t idx)
 
 	return 0;
 }
+
+int wgm_str_array_move(struct wgm_str_array *dst, struct wgm_str_array *src)
+{
+	dst->arr = src->arr;
+	dst->nr = src->nr;
+	memset(src, 0, sizeof(*src));
+	return 0;
+}
