@@ -43,7 +43,7 @@ static const struct wgm_opt options[] = {
 	{ 0, NULL, 0, NULL, 0 }
 };
 
-static void wgm_iface_show_usage(const char *app)
+static void wgm_iface_show_usage(void)
 {
 	printf("Usage: iface <command> [options]\n");
 	printf("\n");
@@ -165,9 +165,9 @@ static int wgm_iface_opt_get_allowed_ips(struct wgm_str_array *allowed_ips, cons
 	return wgm_parse_csv(allowed_ips, ips);
 }
 
-static int wgm_iface_getopt(int argc, char *argv[], struct wgm_ctx *ctx,
-			    struct wgm_iface_arg *arg, uint64_t allowed_args,
-			    uint64_t required_args, uint64_t *out_args_p)
+static int wgm_iface_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
+			    uint64_t allowed_args, uint64_t required_args,
+			    uint64_t *out_args_p)
 {
 	struct option *long_opt;
 	uint64_t out_args = 0;
@@ -218,7 +218,7 @@ static int wgm_iface_getopt(int argc, char *argv[], struct wgm_ctx *ctx,
 			break;
 		case 'h':
 			out_args |= IFACE_ARG_HELP;
-			wgm_iface_show_usage(argv[0]);
+			wgm_iface_show_usage();
 			ret = -1;
 			goto out;
 		case 'f':
@@ -238,14 +238,14 @@ static int wgm_iface_getopt(int argc, char *argv[], struct wgm_ctx *ctx,
 
 		if ((cid & out_args) && !(cid & allowed_args)) {
 			wgm_log_err("Error: Option '--%s' is not allowed\n\n", name);
-			wgm_iface_show_usage(argv[0]);
+			wgm_iface_show_usage();
 			ret = -EINVAL;
 			goto out;
 		}
 
 		if ((cid & required_args) && !(cid & out_args)) {
 			wgm_log_err("Error: Option '--%s' is required\n\n", name);
-			wgm_iface_show_usage(argv[0]);
+			wgm_iface_show_usage();
 			ret = -EINVAL;
 			goto out;
 		}
@@ -595,6 +595,25 @@ static char *wgm_iface_to_json_str(const struct wgm_iface *iface)
 	return jstr;
 }
 
+int wgm_iface_del(const struct wgm_iface *iface, struct wgm_ctx *ctx)
+{
+	char *path;
+	int ret;
+
+	path = wgm_iface_get_file_path(ctx, iface->ifname);
+	if (!path)
+		return -ENOMEM;
+
+	ret = remove(path);
+	if (ret) {
+		ret = -errno;
+		wgm_log_err("Error: wgm_iface_del: Failed to delete file '%s': %s\n", path, strerror(-ret));
+	}
+
+	free(path);
+	return ret;
+}
+
 int wgm_iface_save(const struct wgm_iface *iface, struct wgm_ctx *ctx)
 {
 	char *path, *jstr;
@@ -657,6 +676,35 @@ static void wgm_iface_free_arg(struct wgm_iface_arg *arg)
 	memset(arg, 0, sizeof(*arg));
 }
 
+static int apply_iface(struct wgm_iface *iface, struct wgm_iface_arg *arg,
+		       uint64_t out_args, struct wgm_ctx *ctx)
+{
+	int ret;
+
+	move_arg_to_iface(iface, arg, out_args);
+	ret = wgm_iface_save(iface, ctx);
+	if (ret) {
+		wgm_log_err("Error: apply_iface: Failed to save interface data: %s\n", strerror(-ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+void wgm_iface_dump_json(const struct wgm_iface *iface)
+{
+	char *jstr;
+
+	jstr = wgm_iface_to_json_str(iface);
+	if (!jstr) {
+		wgm_log_err("Error: wgm_iface_dump_json: Failed to convert interface data to JSON\n");
+		return;
+	}
+
+	printf("%s\n", jstr);
+	free(jstr);
+}
+
 int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	static const uint64_t req_args = IFACE_ARG_DEV | IFACE_ARG_LISTEN_PORT |
@@ -672,14 +720,14 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	memset(&arg, 0, sizeof(arg));
 	memset(&iface, 0, sizeof(iface));
 
-	ret = wgm_iface_getopt(argc, argv, ctx, &arg, allowed_args, req_args, &out_args);
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, req_args, &out_args);
 	if (ret)
 		return ret;
 
 	ret = wgm_iface_load(&iface, ctx, arg.ifname);
 	if (!ret) {
 		if (!arg.force) {
-			wgm_log_err("Error: wgm_iface_cmd_add: Interface '%s' already exists, use --force to overwrite\n", arg.ifname);
+			wgm_log_err("Error: wgm_iface_cmd_add: Interface '%s' already exists, use --force to force update\n", arg.ifname);
 			ret = -EEXIST;
 			goto out;
 		}
@@ -690,8 +738,46 @@ int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 		}
 	}
 
-	move_arg_to_iface(&iface, &arg, out_args);
-	ret = wgm_iface_save(&iface, ctx);
+	ret = apply_iface(&iface, &arg, out_args, ctx);
+	wgm_iface_dump_json(&iface);
+out:
+	wgm_iface_free(&iface);
+	wgm_iface_free_arg(&arg);
+	return ret;
+}
+
+int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	static const uint64_t req_args = IFACE_ARG_DEV;
+	static const uint64_t allowed_args = req_args | IFACE_ARG_LISTEN_PORT |
+					      IFACE_ARG_PRIVATE_KEY | IFACE_ARG_ADDRESS |
+					      IFACE_ARG_MTU | IFACE_ARG_ALLOWED_IPS |
+					      IFACE_ARG_HELP | IFACE_ARG_FORCE;
+
+	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, req_args, &out_args);
+	if (ret)
+		return ret;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_update: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	if (!(out_args & (allowed_args & ~IFACE_ARG_DEV))) {
+		printf("Nothing to update\n");
+		goto out;
+	}
+
+	ret = apply_iface(&iface, &arg, out_args, ctx);
+	wgm_iface_dump_json(&iface);
 out:
 	wgm_iface_free(&iface);
 	wgm_iface_free_arg(&arg);
@@ -700,15 +786,63 @@ out:
 
 int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
 {
-	return 0;
+	static const uint64_t req_args = IFACE_ARG_DEV;
+	static const uint64_t allowed_args = req_args | IFACE_ARG_HELP | IFACE_ARG_FORCE;
+
+	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, req_args, &out_args);
+	if (ret)
+		return ret;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		if (arg.force)
+			ret = 0;
+		else
+			wgm_log_err("Error: wgm_iface_cmd_del: Failed to load interface '%s' (use --force to silently ignore): %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+out:
+	wgm_iface_free(&iface);
+	wgm_iface_free_arg(&arg);
+	return ret;
 }
 
 int wgm_iface_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx)
 {
-	return 0;
-}
+	static const uint64_t req_args = IFACE_ARG_DEV;
+	static const uint64_t allowed_args = req_args | IFACE_ARG_HELP;
 
-int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
-{
-	return 0;
+	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, req_args, &out_args);
+	if (ret)
+		return ret;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_show: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	wgm_iface_dump_json(&iface);
+	ret = 0;
+out:
+	wgm_iface_free(&iface);
+	wgm_iface_free_arg(&arg);
+	return ret;
 }

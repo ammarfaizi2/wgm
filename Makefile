@@ -1,5 +1,5 @@
 
-CFLAGS = -Os -Wall -Wextra -ggdb3 -D_GNU_SOURCE -Wno-unused-parameter
+CFLAGS = -Os -Wall -Wextra -ggdb3 -D_GNU_SOURCE
 LDFLAGS = -Os
 LDLIBS = -ljson-c
 

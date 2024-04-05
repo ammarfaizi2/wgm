@@ -35,5 +35,6 @@ int wgm_iface_del_peer_by_pubkey(struct wgm_iface *iface, const char *pubkey);
 int wgm_iface_get_peer_by_pubkey(const struct wgm_iface *iface, const char *pubkey, struct wgm_peer **peer);
 
 void wgm_iface_free(struct wgm_iface *iface);
+void wgm_iface_dump_json(const struct wgm_iface *iface);
 
 #endif /* #ifndef WGM__WG_IFACE_H */
