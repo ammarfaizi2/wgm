@@ -481,8 +481,8 @@ int wgm_iface_get_peer_by_pubkey(const struct wgm_iface *iface, const char *pubk
 
 void wgm_iface_free(struct wgm_iface *iface)
 {
-	wgm_free_str_array(&iface->addresses);
-	wgm_free_str_array(&iface->allowed_ips);
+	wgm_str_array_free(&iface->addresses);
+	wgm_str_array_free(&iface->allowed_ips);
 	memset(iface, 0, sizeof(*iface));
 }
 
@@ -671,8 +671,8 @@ static void move_arg_to_iface(struct wgm_iface *iface, struct wgm_iface_arg *arg
 
 static void wgm_iface_free_arg(struct wgm_iface_arg *arg)
 {
-	wgm_free_str_array(&arg->addresses);
-	wgm_free_str_array(&arg->allowed_ips);
+	wgm_str_array_free(&arg->addresses);
+	wgm_str_array_free(&arg->allowed_ips);
 	memset(arg, 0, sizeof(*arg));
 }
 
