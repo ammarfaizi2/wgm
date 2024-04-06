@@ -3,6 +3,10 @@
 #include "wgm_iface.h"
 #include "wgm_peer.h"
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <getopt.h>
 #include <dirent.h>
 
@@ -46,7 +50,7 @@ static const struct wgm_opt options[] = {
 
 static void wgm_iface_show_usage(void)
 {
-	printf("Usage: iface [add|del|show|update|list] [OPTIONS]\n");
+	printf("Usage: wgm iface [add|del|show|update|list] [OPTIONS]\n");
 	printf("\n");
 	printf("Commands:\n");
 	printf("  add    - Add a new WireGuard interface\n");

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 #include "wgm_peer.h"
+#include "wgm_iface.h"
 
 struct wgm_peer_arg {
 	char			ifname[IFNAMSIZ];
@@ -8,6 +9,7 @@ struct wgm_peer_arg {
 	char			endpoint[128];
 	char			bind_ip[16];
 	struct wgm_str_array	allowed_ips;
+	bool			force;
 };
 
 static const struct wgm_opt options[] = {
@@ -27,7 +29,7 @@ static const struct wgm_opt options[] = {
 	{ PEER_ARG_ALLOWED_IPS,	"allowed-ips",	required_argument,	NULL,	'a' },
 
 	#define PEER_ARG_HELP		(1ull << 5)
-	{ PEER_ARG_HELP,		"help",	no_argument,		NULL,	'h' },
+	{ PEER_ARG_HELP,	"help",		no_argument,		NULL,	'h' },
 
 	#define PEER_ARG_FORCE		(1ull << 6)
 	{ PEER_ARG_FORCE,	"force",	no_argument,		NULL,	'f' },
@@ -54,7 +56,80 @@ static void wgm_peer_show_usage(void)
 	printf("  -h, --help        Show this help message\n");
 }
 
-static int wgm_iface_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
+static int wgm_peer_opt_get_dev(char *ifname, size_t iflen, const char *dev)
+{
+	return wgm_iface_opt_get_dev(ifname, iflen, dev);
+}
+
+static int wgm_peer_opt_get_public_key(char *private_key, size_t keylen,
+				       const char *key)
+{
+	size_t i;
+
+	i = strlen(key);
+	if (i >= keylen) {
+		wgm_log_err("Error: Private key is too long, max %zu characters\n",
+			    keylen - 1);
+		return -EINVAL;
+	}
+
+	if (!i) {
+		wgm_log_err("Error: Private key cannot be empty\n");
+		return -EINVAL;
+	}
+
+	strncpyl(private_key, key, keylen);
+	return 0;
+}
+
+static int wgm_peer_opt_get_endpoint(char *endpoint, size_t endlen,
+				     const char *end)
+{
+	size_t i;
+
+	i = strlen(end);
+	if (i >= endlen) {
+		wgm_log_err("Error: Endpoint is too long, max %zu characters\n",
+			    endlen - 1);
+		return -EINVAL;
+	}
+
+	if (!i) {
+		wgm_log_err("Error: Endpoint cannot be empty\n");
+		return -EINVAL;
+	}
+
+	strncpyl(endpoint, end, endlen);
+	return 0;
+}
+
+static int wgm_peer_opt_get_bind_ip(char *bind_ip, size_t iplen, const char *ip)
+{
+	size_t i;
+
+	i = strlen(ip);
+	if (i >= iplen) {
+		wgm_log_err("Error: Bind IP is too long, max %zu characters\n",
+			    iplen - 1);
+		return -EINVAL;
+	}
+
+	if (!i) {
+		wgm_log_err("Error: Bind IP cannot be empty\n");
+		return -EINVAL;
+	}
+
+	strncpyl(bind_ip, ip, iplen);
+	return 0;
+}
+
+static int wgm_peer_opt_get_allowed_ips(struct wgm_str_array *allowed_ips,
+					const char *ips)
+{
+	return wgm_parse_csv(allowed_ips, ips);
+}
+
+static int wgm_peer_getopt(int argc, char *argv[], struct wgm_peer_arg *arg,
 			    uint64_t allowed_args, uint64_t required_args,
 			    uint64_t *out_args_p)
 {
@@ -69,14 +144,148 @@ static int wgm_iface_getopt(int argc, char *argv[], struct wgm_iface_arg *arg,
 	if (ret)
 		return ret;
 
+	while (1) {
+		c = getopt_long(argc, argv, short_opt, long_opt, NULL);
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'd':
+			if (wgm_peer_opt_get_dev(arg->ifname, sizeof(arg->ifname), optarg))
+				return -EINVAL;
+			out_args |= PEER_ARG_DEV;
+			break;
+		case 'p':
+			if (wgm_peer_opt_get_public_key(arg->public_key, sizeof(arg->public_key), optarg))
+				return -EINVAL;
+			out_args |= PEER_ARG_PUBLIC_KEY;
+			break;
+		case 'e':
+			if (wgm_peer_opt_get_endpoint(arg->endpoint, sizeof(arg->endpoint), optarg))
+				return -EINVAL;
+			out_args |= PEER_ARG_ENDPOINT;
+			break;
+		case 'b':
+			if (wgm_peer_opt_get_bind_ip(arg->bind_ip, sizeof(arg->bind_ip), optarg))
+				return -EINVAL;
+			out_args |= PEER_ARG_BIND_IP;
+			break;
+		case 'a':
+			if (wgm_peer_opt_get_allowed_ips(&arg->allowed_ips, optarg))
+				return -EINVAL;
+			out_args |= PEER_ARG_ALLOWED_IPS;
+			break;
+		case 'h':
+			wgm_peer_show_usage();
+			ret = -1;
+			goto out;
+		case 'f':
+			arg->force = true;
+			out_args |= PEER_ARG_FORCE;
+			break;
+		case '?':
+			ret = -EINVAL;
+			goto out;
+		default:
+			wgm_log_err("Error: Invalid option '%c'\n", c);
+			ret = -EINVAL;
+			goto out;
+		}
+	}
+
+	for (i = 0; i < ARRAY_SIZE(options); i++) {
+		const char *name = options[i].name;
+		uint64_t cid = options[i].id;
+
+		if ((cid & out_args) && !(cid & allowed_args)) {
+			wgm_log_err("Error: Option '--%s' is not allowed\n\n", name);
+			wgm_peer_show_usage();
+			ret = -EINVAL;
+			goto out;
+		}
+
+		if ((cid & required_args) && !(cid & out_args)) {
+			wgm_log_err("Error: Option '--%s' is required\n\n", name);
+			wgm_peer_show_usage();
+			ret = -EINVAL;
+			goto out;
+		}
+	}
+
+	*out_args_p = out_args;
+
 out:
 	wgm_free_getopt_long_args(long_opt, short_opt);
 	return ret;
 }
 
+static void wgm_peer_arg_free(struct wgm_peer_arg *arg)
+{
+	wgm_str_array_free(&arg->allowed_ips);
+	memset(arg, 0, sizeof(*arg));
+}
+
+static void apply_wgm_arg(struct wgm_peer *peer, struct wgm_peer_arg *arg,
+			  uint64_t out_args)
+{
+	if (out_args & PEER_ARG_PUBLIC_KEY)
+		memcpy(peer->public_key, arg->public_key, sizeof(peer->public_key));
+
+	if (out_args & PEER_ARG_BIND_IP)
+		memcpy(peer->bind_ip, arg->bind_ip, sizeof(peer->bind_ip));
+
+	if (out_args & PEER_ARG_ALLOWED_IPS)
+		wgm_str_array_move(&peer->allowed_ips, &arg->allowed_ips);
+}
+
+
 int wgm_peer_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 {
-	return 0;
+	static const uint64_t required_args = PEER_ARG_DEV | PEER_ARG_PUBLIC_KEY |
+					      PEER_ARG_ALLOWED_IPS;
+	static const uint64_t allowed_args = required_args | PEER_ARG_ENDPOINT |
+					     PEER_ARG_BIND_IP | PEER_ARG_FORCE |
+					     PEER_ARG_HELP;
+
+	struct wgm_peer_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	struct wgm_peer peer;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+	memset(&peer, 0, sizeof(peer));
+
+	ret = wgm_peer_getopt(argc, argv, &arg, allowed_args, required_args, &out_args);
+	if (ret)
+		goto out;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	apply_wgm_arg(&peer, &arg, out_args);
+	ret = wgm_iface_add_peer(&iface, &peer);
+	if (ret) {
+		wgm_log_err("Error: Failed to add peer to interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_iface_save(&iface, ctx);
+	if (ret) {
+		wgm_log_err("Error: Failed to save interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	wgm_iface_dump_json(&iface);
+out:
+	wgm_peer_arg_free(&arg);
+	wgm_iface_free(&iface);
+	wgm_peer_free(&peer);
+	return ret;
 }
 
 int wgm_peer_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
