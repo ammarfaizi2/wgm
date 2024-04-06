@@ -40,15 +40,7 @@ static const struct wgm_opt options[] = {
 
 static void wgm_peer_show_usage(void)
 {
-	printf("Usage: wgm peer [add|del|show|update] [OPTIONS]\n");
-	printf("Options:\n");
-	printf("  -d, --dev         Interface name\n");
-	printf("  -p, --public-key  Public key of the peer\n");
-	printf("  -e, --endpoint    Endpoint of the peer\n");
-	printf("  -b, --bind-ip     Bind IP of the peer\n");
-	printf("  -a, --allowed-ips Allowed IPs of the peer\n");
-	printf("  -f, --force       Force the operation\n");
-	printf("  -h, --help        Show this help message\n");
+	show_usage_peer(NULL, false);
 }
 
 static int wgm_peer_opt_get_dev(char *ifname, size_t iflen, const char *dev)
