@@ -2,6 +2,19 @@
 
 A simple program to manage multiple wireguard interfaces and peers.
 
+# Table of Contents
+
+- [Build](#build)
+- [Commands](#commands)
+
+## Subcommands:
+- [iface subcommands](#iface-subcommands)
+- [peer subcommands](#peer-subcommands)
+
+## Examples:
+- [iface command examples](#iface-command-examples)
+- [peer command examples](#peer-command-examples)
+
 # Build
 
 ```txt
