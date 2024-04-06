@@ -14,7 +14,7 @@ make -j4;
 # Commands
 ```txt
 $ ./wgm
-Usage: ./wgm [command] [options]
+Usage: ./wgm [iface|peer] [options]
 
 Commands:
   iface - Manage WireGuard interfaces

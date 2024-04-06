@@ -8,7 +8,7 @@
 
 static void show_usage(const char *app)
 {
-	printf("Usage: %s [COMMAND] [OPTIONS]\n\n", app);
+	printf("Usage: %s [iface|peer] [OPTIONS]\n\n", app);
 	printf("Commands:\n");
 	printf("  iface - Manage WireGuard interfaces\n");
 	printf("  peer  - Manage WireGuard peers\n");
