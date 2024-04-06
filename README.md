@@ -102,3 +102,10 @@ Options:
 ```txt
 ./wgm iface del --dev wgm0;
 ```
+
+### 6. Update the private key of an interface
+```txt
+./wgm iface update \
+    --dev wgm0 \
+    --private-key "OB5yPRVxfOkp0YZL9FPy4HzFIEZpT/WblEc2eistaVA=";
+```
