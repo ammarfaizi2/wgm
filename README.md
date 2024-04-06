@@ -69,7 +69,9 @@ Options:
 ```
 
 # iface command examples
+
 ### 1. Add a new interface
+
 ```txt
 ./wgm iface add \
     --force \
@@ -82,36 +84,56 @@ Options:
 ```
 
 ### 2. Update the MTU size of an interface
+
+Option `--dev` is required to identify the interface to be updated.
 ```txt
-./wgm iface update \
-    --dev wgm0 \
-    --mtu 1500;
+./wgm iface update --dev wgm0 --mtu 1500;
 ```
 
 ### 3. Show information about an interface
+
 ```txt
 ./wgm iface show --dev wgm0;
 ```
 
 ### 4. List all interfaces
+
 ```txt
 ./wgm iface list;
 ```
 
 ### 5. Delete an interface
+
+Option `--dev` is required to identify the interface to be deleted.
 ```txt
 ./wgm iface del --dev wgm0;
 ```
 
 ### 6. Update the private key of an interface
+
+Option `--dev` is required to identify the interface to be updated.
 ```txt
 ./wgm iface update \
     --dev wgm0 \
     --private-key "OB5yPRVxfOkp0YZL9FPy4HzFIEZpT/WblEc2eistaVA=";
 ```
 
+### 7. Update many options of an interface at once.
+
+Option `--dev` is required to identify the interface to be updated.
+```txt
+./wgm iface update \
+    --dev wgm0 \
+    --mtu 1420 \
+    --listen-port 443 \
+    --private-key "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=";
+```
+
 # peer command examples
+
 ### 1. Add a new peer to an interface
+
+Option `--dev` is required to select the interface where the peer will be added.
 ```txt
 ./wgm peer add \
     --dev wgm0 \
@@ -121,7 +143,7 @@ Options:
 
 ### 2. Update the allowed IPs of a peer
 
-Option `--dev` and `--public-key` are required to identify the peer to be updated.
+Option `--dev` and `--public-key` are required to identify the peer.
 ```txt
 ./wgm peer update \
     --dev wgm0 \
@@ -130,6 +152,8 @@ Option `--dev` and `--public-key` are required to identify the peer to be update
 ```
 
 ### 3. Show information about a peer
+
+Option `--dev` and `--public-key` are required to identify the peer.
 ```txt
 ./wgm peer show \
     --dev wgm0 \
@@ -137,11 +161,15 @@ Option `--dev` and `--public-key` are required to identify the peer to be update
 ```
 
 ### 4. List all peers in an interface
+
+Option `--dev` is required to identify the interface.
 ```txt
 ./wgm peer list --dev wgm0;
 ```
 
 ### 5. Delete a peer from an interface
+
+Option `--dev` and `--public-key` are required to identify the peer.
 ```txt
 ./wgm peer del \
     --dev wgm0 \
