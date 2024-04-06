@@ -290,7 +290,49 @@ out:
 
 int wgm_peer_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
 {
-	return 0;
+	static const uint64_t required_args = PEER_ARG_DEV | PEER_ARG_PUBLIC_KEY;
+	static const uint64_t allowed_args = required_args | PEER_ARG_FORCE | PEER_ARG_HELP;
+
+	struct wgm_peer_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	struct wgm_peer peer;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+	memset(&peer, 0, sizeof(peer));
+
+	ret = wgm_peer_getopt(argc, argv, &arg, allowed_args, required_args, &out_args);
+	if (ret)
+		goto out;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	apply_wgm_arg(&peer, &arg, out_args);
+	ret = wgm_iface_del_peer_by_pubkey(&iface, peer.public_key);
+	if (ret) {
+		wgm_log_err("Error: Failed to delete peer from interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_iface_save(&iface, ctx);
+	if (ret) {
+		wgm_log_err("Error: Failed to save interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	wgm_iface_dump_json(&iface);
+	ret = 0;
+out:
+	wgm_peer_arg_free(&arg);
+	wgm_iface_free(&iface);
+	wgm_peer_free(&peer);
+	return ret;
 }
 
 int wgm_peer_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx)

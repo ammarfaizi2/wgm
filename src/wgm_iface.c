@@ -556,6 +556,7 @@ int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer, boo
 			return ret;
 		}
 
+		wgm_peer_free(&tmp);
 		return 0;
 	}
 
@@ -595,13 +596,17 @@ int wgm_iface_del_peer(struct wgm_iface *iface, size_t idx)
 
 int wgm_iface_del_peer_by_pubkey(struct wgm_iface *iface, const char *pubkey)
 {
+	bool found = false;
 	size_t i;
 	int ret;
 
 	for (i = 0; i < iface->peers.nr; i++) {
+		printf("iface->peers.peers[i].public_key: '%s'\n", iface->peers.peers[i].public_key);
+		printf("pubkey: '%s'\n", pubkey);
 		if (strcmp(iface->peers.peers[i].public_key, pubkey))
 			continue;
 
+		found = true;
 		ret = wgm_iface_del_peer(iface, i);
 		if (ret) {
 			wgm_log_err("Error: wgm_iface_del_peer_by_pubkey: Failed to delete peer\n");
@@ -609,8 +614,12 @@ int wgm_iface_del_peer_by_pubkey(struct wgm_iface *iface, const char *pubkey)
 		}
 	}
 
-	wgm_log_err("Error: wgm_iface_del_peer_by_pubkey: Peer with public key '%s' not found\n", pubkey);
-	return -ENOENT;
+	if (!found) {
+		wgm_log_err("Error: wgm_iface_del_peer_by_pubkey: Peer with public key '%s' not found\n", pubkey);
+		return -ENOENT;
+	}
+
+	return 0;
 }
 
 int wgm_iface_get_peer_by_pubkey(const struct wgm_iface *iface, const char *pubkey,
