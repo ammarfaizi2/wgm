@@ -32,7 +32,7 @@ A simple program to manage multiple wireguard interfaces and peers.
 
 ```txt
 sudo apt install -y gcc make libjson-c-dev git;
-git clone https://github.com/ammarfaizi2/wg-mgr.git;
+git clone https://github.com/ammarfaizi2/wgm.git;
 cd wg-mgr;
 make -j4;
 ```
