@@ -750,7 +750,6 @@ int wgm_iface_to_json(json_object **jobj, const struct wgm_iface *iface)
 
 static char *wgm_iface_to_json_str(const struct wgm_iface *iface)
 {
-	static const int json_flags = JSON_C_TO_STRING_NOSLASHESCAPE | JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY;
 	json_object *jobj;
 	const char *tmp;
 	char *jstr;
@@ -762,7 +761,7 @@ static char *wgm_iface_to_json_str(const struct wgm_iface *iface)
 		return NULL;
 	}
 
-	tmp = json_object_to_json_string_ext(jobj, json_flags);
+	tmp = json_object_to_json_string_ext(jobj, WGM_JSON_FLAGS);
 	if (!tmp) {
 		wgm_log_err("Error: wgm_iface_to_json_str: Failed to convert JSON object to string\n");
 		json_object_put(jobj);
@@ -1198,7 +1197,6 @@ void wgm_iface_move(struct wgm_iface *dst, struct wgm_iface *src)
 
 void wgm_iface_array_dump_json(const struct wgm_iface_array *ifaces)
 {
-	static const int json_flags = JSON_C_TO_STRING_NOSLASHESCAPE | JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY;
 	json_object *jobj;
 	int ret;
 
@@ -1208,7 +1206,7 @@ void wgm_iface_array_dump_json(const struct wgm_iface_array *ifaces)
 		return;
 	}
 
-	printf("%s\n", json_object_to_json_string_ext(jobj, json_flags));
+	printf("%s\n", json_object_to_json_string_ext(jobj, WGM_JSON_FLAGS));
 	json_object_put(jobj);
 }
 
@@ -1221,4 +1219,19 @@ void wgm_iface_array_free(struct wgm_iface_array *ifaces)
 
 	free(ifaces->ifaces);
 	memset(ifaces, 0, sizeof(*ifaces));
+}
+
+void wgm_iface_peer_array_dump_json(const struct wgm_peer_array *peers)
+{
+	json_object *jobj;
+	int ret;
+
+	ret = wgm_peer_array_to_json(&jobj, peers);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_peer_array_dump_json: Failed to convert peer array to JSON\n");
+		return;
+	}
+
+	printf("%s\n", json_object_to_json_string_ext(jobj, WGM_JSON_FLAGS));
+	json_object_put(jobj);
 }

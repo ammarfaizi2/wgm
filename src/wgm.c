@@ -34,6 +34,7 @@ static void show_usage_peer(const char *app)
 	printf("  del    - Delete an existing peer from a WireGuard interface\n");
 	printf("  show   - Show information about a peer in a WireGuard interface\n");
 	printf("  update - Update an existing peer in a WireGuard interface\n");
+	printf("  list   - List all peers in a WireGuard interface\n");
 	printf("\n");
 }
 
@@ -93,6 +94,10 @@ static int wgm_ctx_run(int argc, char *argv[], struct wgm_ctx *ctx)
 
 		if (!strcmp(argv[2], "list"))
 			return wgm_iface_cmd_list(argc - 1, argv + 1, ctx);
+
+		fprintf(stderr, "Error: unknown command: %s\n\n", argv[2]);
+		show_usage_iface(argv[0]);
+		return 1;
 	}
 
 	if (strcmp(argv[1], "peer") == 0) {
@@ -112,6 +117,13 @@ static int wgm_ctx_run(int argc, char *argv[], struct wgm_ctx *ctx)
 
 		if (!strcmp(argv[2], "update"))
 			return wgm_peer_cmd_update(argc - 1, argv + 1, ctx);
+
+		if (!strcmp(argv[2], "list"))
+			return wgm_peer_cmd_list(argc - 1, argv + 1, ctx);
+
+		fprintf(stderr, "Error: unknown command: %s\n\n", argv[2]);
+		show_usage_peer(argv[0]);
+		return 1;
 	}
 
 	fprintf(stderr, "Error: unknown command: %s\n\n", argv[1]);

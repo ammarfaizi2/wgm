@@ -51,5 +51,6 @@ int wgm_iface_array_to_json(json_object **jobj, const struct wgm_iface_array *if
 void wgm_iface_array_dump_json(const struct wgm_iface_array *ifaces);
 
 int wgm_iface_opt_get_dev(char *ifname, size_t iflen, const char *dev);
+void wgm_iface_peer_array_dump_json(const struct wgm_peer_array *peers);
 
 #endif /* #ifndef WGM__WG_IFACE_H */

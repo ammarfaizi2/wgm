@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
+#include "wgm.h"
 #include "wgm_peer.h"
 #include "wgm_iface.h"
 
@@ -40,12 +41,6 @@ static const struct wgm_opt options[] = {
 static void wgm_peer_show_usage(void)
 {
 	printf("Usage: wgm peer [add|del|show|update] [OPTIONS]\n");
-	printf("Commands:\n");
-	printf("  add    - Add a new peer to the interface\n");
-	printf("  del    - Delete a peer from the interface\n");
-	printf("  show   - Show a peer configuration\n");
-	printf("  update - Update a peer configuration\n");
-	printf("  list   - List all peers on the interface\n");
 	printf("Options:\n");
 	printf("  -d, --dev         Interface name\n");
 	printf("  -p, --public-key  Public key of the peer\n");
@@ -335,14 +330,138 @@ out:
 	return ret;
 }
 
+static void wgm_peer_dump_json(const struct wgm_peer *peer)
+{
+	json_object *jpeer;
+	int ret;
+
+	ret = wgm_peer_to_json(&jpeer, peer);
+	if (ret) {
+		wgm_log_err("Error: Failed to convert peer to JSON: %s\n", strerror(-ret));
+		return;
+	}
+
+	printf("%s\n", json_object_to_json_string_ext(jpeer, WGM_JSON_FLAGS));
+	json_object_put(jpeer);
+}
+
 int wgm_peer_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx)
 {
-	return 0;
+	static const uint64_t required_args = PEER_ARG_DEV | PEER_ARG_PUBLIC_KEY;
+	static const uint64_t allowed_args = required_args | PEER_ARG_HELP;
+
+	struct wgm_peer *peer_p;
+	struct wgm_peer_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+
+	ret = wgm_peer_getopt(argc, argv, &arg, allowed_args, required_args, &out_args);
+	if (ret)
+		goto out;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_iface_get_peer_by_pubkey(&iface, arg.public_key, &peer_p);
+	if (ret) {
+		wgm_log_err("Error: Failed to get peer from interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	wgm_peer_dump_json(peer_p);
+	ret = 0;
+
+out:
+	wgm_peer_arg_free(&arg);
+	wgm_iface_free(&iface);
+	return ret;
 }
 
 int wgm_peer_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
 {
-	return 0;
+	const uint64_t required_args = PEER_ARG_DEV | PEER_ARG_PUBLIC_KEY;
+	const uint64_t allowed_args = required_args | PEER_ARG_ENDPOINT |
+				      PEER_ARG_BIND_IP | PEER_ARG_ALLOWED_IPS |
+				      PEER_ARG_FORCE | PEER_ARG_HELP;
+
+	struct wgm_peer *peer_p;
+	struct wgm_peer_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+
+	ret = wgm_peer_getopt(argc, argv, &arg, allowed_args, required_args, &out_args);
+	if (ret)
+		goto out;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_iface_get_peer_by_pubkey(&iface, arg.public_key, &peer_p);
+	if (ret) {
+		wgm_log_err("Error: Failed to get peer from interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	apply_wgm_arg(peer_p, &arg, out_args);
+	ret = wgm_iface_save(&iface, ctx);
+	if (ret) {
+		wgm_log_err("Error: Failed to save interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	wgm_iface_dump_json(&iface);
+	ret = 0;
+
+out:
+	wgm_peer_arg_free(&arg);
+	wgm_iface_free(&iface);
+	return ret;
+}
+
+int wgm_peer_cmd_list(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	static const uint64_t required_args = PEER_ARG_DEV;
+	static const uint64_t allowed_args = required_args | PEER_ARG_HELP;
+
+	struct wgm_peer_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+
+	ret = wgm_peer_getopt(argc, argv, &arg, allowed_args, required_args, &out_args);
+	if (ret)
+		goto out;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	wgm_iface_peer_array_dump_json(&iface.peers);
+	ret = 0;
+
+out:
+	wgm_peer_arg_free(&arg);
+	wgm_iface_free(&iface);
+	return ret;
 }
 
 int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src)
