@@ -12,8 +12,21 @@ A simple program to manage multiple wireguard interfaces and peers.
 - [peer subcommands](#peer-subcommands)
 
 ## Examples:
-- [iface command examples](#iface-command-examples)
-- [peer command examples](#peer-command-examples)
+- [A. iface command examples](#a-iface-command-examples)
+  - [A.1. Add a new interface](#a1-add-a-new-interface)
+  - [A.2. Update the MTU size of an interface](#a2-update-the-mtu-size-of-an-interface)
+  - [A.3. Show information about an interface](#a3-show-information-about-an-interface)
+  - [A.4. List all interfaces](#a4-list-all-interfaces)
+  - [A.5. Delete an interface](#a5-delete-an-interface)
+  - [A.6. Update the private key of an interface](#a6-update-the-private-key-of-an-interface)
+  - [A.7. Update many options of an interface at once.](#a7-update-many-options-of-an-interface-at-once)
+
+- [B. peer command examples](#b-peer-command-examples)
+  - [B.1. Add a new peer to an interface](#b1-add-a-new-peer-to-an-interface)
+  - [B.2. Update the allowed IPs of a peer](#b2-update-the-allowed-ips-of-a-peer)
+  - [B.3. Show information about a peer](#b3-show-information-about-a-peer)
+  - [B.4. List all peers in an interface](#b4-list-all-peers-in-an-interface)
+  - [B.5. Delete a peer from an interface](#b5-delete-a-peer-from-an-interface)
 
 # Build
 
