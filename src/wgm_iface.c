@@ -46,25 +46,7 @@ static const struct wgm_opt options[] = {
 
 static void wgm_iface_show_usage(void)
 {
-	printf("Usage: wgm iface [add|del|show|update|list] [OPTIONS]\n");
-	printf("\n");
-	printf("Commands:\n");
-	printf("  add    - Add a new WireGuard interface\n");
-	printf("  del    - Delete an existing WireGuard interface\n");
-	printf("  show   - Show information about a WireGuard interface\n");
-	printf("  update - Update an existing WireGuard interface\n");
-	printf("  list   - List all WireGuard interfaces (no options required)\n");
-	printf("\n");
-	printf("Options:\n");
-	printf("  -d, --dev <name>          Interface name\n");
-	printf("  -l, --listen-port <port>  Listen port\n");
-	printf("  -k, --private-key <key>   Private key\n");
-	printf("  -a, --address <addr>      Interface address\n");
-	printf("  -m, --mtu <size>          MTU size\n");
-	printf("  -i, --allowed-ips <ips>   Allowed IPs\n");
-	printf("  -h, --help                Show this help message\n");
-	printf("  -f, --force               Force operation\n");
-	printf("\n");
+	show_usage_iface(NULL, false);
 }
 
 int wgm_iface_opt_get_dev(char *ifname, size_t iflen, const char *dev)

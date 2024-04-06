@@ -8,33 +8,62 @@
 
 static void show_usage(const char *app)
 {
-	printf("Usage: %s <command> [options]\n\n", app);
+	printf("Usage: %s [iface|peer] [OPTIONS]\n\n", app);
 	printf("Commands:\n");
 	printf("  iface - Manage WireGuard interfaces\n");
 	printf("  peer  - Manage WireGuard peers\n");
 }
 
-static void show_usage_iface(const char *app)
+void show_usage_iface(const char *app, bool show_cmds)
 {
-	printf("Usage: %s iface [command] [options]\n\n", app);
-	printf("Commands:\n");
-	printf("  add    - Add a new WireGuard interface\n");
-	printf("  del    - Delete an existing WireGuard interface\n");
-	printf("  show   - Show information about a WireGuard interface\n");
-	printf("  update - Update an existing WireGuard interface\n");
-	printf("  list   - List all WireGuard interfaces\n");
+	if (!app)
+		app = "wgm";
+
+	printf("Usage: %s iface [add|del|show|update|list] [OPTIONS]\n\n", app);
+	if (show_cmds) {
+		printf("Commands:\n");
+		printf("  add    - Add a new WireGuard interface\n");
+		printf("  del    - Delete an existing WireGuard interface\n");
+		printf("  show   - Show information about a WireGuard interface\n");
+		printf("  update - Update an existing WireGuard interface\n");
+		printf("  list   - List all WireGuard interfaces (no options required)\n");
+		printf("\n");
+	}
+	printf("Options:\n");
+	printf("  -d, --dev <name>          Interface name\n");
+	printf("  -l, --listen-port <port>  Listen port\n");
+	printf("  -k, --private-key <key>   Private key\n");
+	printf("  -a, --address <addr>      Interface address\n");
+	printf("  -m, --mtu <size>          MTU size\n");
+	printf("  -i, --allowed-ips <ips>   Allowed IPs\n");
+	printf("  -h, --help                Show this help message\n");
+	printf("  -f, --force               Force operation\n");
 	printf("\n");
 }
 
-static void show_usage_peer(const char *app)
+void show_usage_peer(const char *app, bool show_cmds)
 {
-	printf("Usage: %s peer [command] [options]\n\n", app);
-	printf("Commands:\n");
-	printf("  add    - Add a new peer to a WireGuard interface\n");
-	printf("  del    - Delete an existing peer from a WireGuard interface\n");
-	printf("  show   - Show information about a peer in a WireGuard interface\n");
-	printf("  update - Update an existing peer in a WireGuard interface\n");
-	printf("  list   - List all peers in a WireGuard interface\n");
+	if (!app)
+		app = "wgm";
+
+	printf("Usage: wgm peer [add|del|show|update|list] [OPTIONS]\n\n");
+	if (show_cmds) {
+		printf("Commands:\n");
+		printf("  add    - Add a new peer to a WireGuard interface\n");
+		printf("  del    - Delete an existing peer from a WireGuard interface\n");
+		printf("  show   - Show information about a peer in a WireGuard interface\n");
+		printf("  update - Update an existing peer in a WireGuard interface\n");
+		printf("  list   - List all peers in a WireGuard interface\n");
+		printf("\n");
+	}
+	printf("Options:\n");
+	printf("  -d, --dev         Interface name\n");
+	printf("  -p, --public-key  Public key of the peer\n");
+	printf("  -e, --endpoint    Endpoint of the peer\n");
+	printf("  -b, --bind-ip     Bind IP of the peer\n");
+	printf("  -a, --allowed-ips Allowed IPs of the peer\n");
+	printf("  -f, --force       Force the operation\n");
+	printf("  -h, --help        Show this help message\n");
 	printf("\n");
 }
 
@@ -76,7 +105,7 @@ static int wgm_ctx_run(int argc, char *argv[], struct wgm_ctx *ctx)
 
 	if (strcmp(argv[1], "iface") == 0) {
 		if (argc < 3) {
-			show_usage_iface(argv[0]);
+			show_usage_iface(argv[0], true);
 			return 1;
 		}
 
@@ -96,13 +125,13 @@ static int wgm_ctx_run(int argc, char *argv[], struct wgm_ctx *ctx)
 			return wgm_iface_cmd_list(argc - 1, argv + 1, ctx);
 
 		fprintf(stderr, "Error: unknown command: %s\n\n", argv[2]);
-		show_usage_iface(argv[0]);
+		show_usage_iface(argv[0], true);
 		return 1;
 	}
 
 	if (strcmp(argv[1], "peer") == 0) {
 		if (argc < 3) {
-			show_usage_peer(argv[0]);
+			show_usage_peer(argv[0], true);
 			return 1;
 		}
 
@@ -122,7 +151,7 @@ static int wgm_ctx_run(int argc, char *argv[], struct wgm_ctx *ctx)
 			return wgm_peer_cmd_list(argc - 1, argv + 1, ctx);
 
 		fprintf(stderr, "Error: unknown command: %s\n\n", argv[2]);
-		show_usage_peer(argv[0]);
+		show_usage_peer(argv[0], true);
 		return 1;
 	}
 
