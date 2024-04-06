@@ -24,21 +24,31 @@ Commands:
 # iface subcommands
 ```txt
 $ ./wgm iface
-Usage: ./wgm iface [command] [options]
+Usage: ./wgm iface [add|del|show|update|list] [OPTIONS]
 
 Commands:
   add    - Add a new WireGuard interface
   del    - Delete an existing WireGuard interface
   show   - Show information about a WireGuard interface
   update - Update an existing WireGuard interface
-  list   - List all WireGuard interfaces
+  list   - List all WireGuard interfaces (no options required)
+
+Options:
+  -d, --dev <name>          Interface name
+  -l, --listen-port <port>  Listen port
+  -k, --private-key <key>   Private key
+  -a, --address <addr>      Interface address
+  -m, --mtu <size>          MTU size
+  -i, --allowed-ips <ips>   Allowed IPs
+  -h, --help                Show this help message
+  -f, --force               Force operation
 
 ```
 
 # peer subcommands
 ```txt
 $ ./wgm peer
-Usage: ./wgm peer [command] [options]
+Usage: wgm peer [add|del|show|update|list] [OPTIONS]
 
 Commands:
   add    - Add a new peer to a WireGuard interface
@@ -46,6 +56,15 @@ Commands:
   show   - Show information about a peer in a WireGuard interface
   update - Update an existing peer in a WireGuard interface
   list   - List all peers in a WireGuard interface
+
+Options:
+  -d, --dev         Interface name
+  -p, --public-key  Public key of the peer
+  -e, --endpoint    Endpoint of the peer
+  -b, --bind-ip     Bind IP of the peer
+  -a, --allowed-ips Allowed IPs of the peer
+  -f, --force       Force the operation
+  -h, --help        Show this help message
 
 ```
 
