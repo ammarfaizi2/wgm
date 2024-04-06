@@ -305,7 +305,6 @@ int wgm_peer_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
 
 int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src)
 {
-	wgm_peer_free(dst);
 	memcpy(dst->public_key, src->public_key, sizeof(dst->public_key));
 	memcpy(dst->bind_ip, src->bind_ip, sizeof(dst->bind_ip));
 	return wgm_str_array_copy(&dst->allowed_ips, &src->allowed_ips);
@@ -313,7 +312,6 @@ int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src)
 
 void wgm_peer_move(struct wgm_peer *dst, struct wgm_peer *src)
 {
-	wgm_peer_free(dst);
 	memcpy(dst->public_key, src->public_key, sizeof(dst->public_key));
 	memcpy(dst->bind_ip, src->bind_ip, sizeof(dst->bind_ip));
 	wgm_str_array_move(&dst->allowed_ips, &src->allowed_ips);
@@ -322,7 +320,7 @@ void wgm_peer_move(struct wgm_peer *dst, struct wgm_peer *src)
 
 void wgm_peer_free(struct wgm_peer *peer)
 {
-	free(peer->allowed_ips.arr);
+	wgm_str_array_free(&peer->allowed_ips);
 	memset(peer, 0, sizeof(*peer));
 }
 
@@ -382,5 +380,6 @@ int wgm_peer_from_json(struct wgm_peer *peer, const json_object *jobj)
 	if (!ret)
 		return -EINVAL;
 
+	memset(&peer->allowed_ips, 0, sizeof(peer->allowed_ips));
 	return wgm_str_array_from_json(&peer->allowed_ips, tmp);
 }

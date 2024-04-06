@@ -132,7 +132,7 @@ int wgm_parse_csv(struct wgm_str_array *arr, const char *str)
 	if (!tmp)
 		return -ENOMEM;
 
-	wgm_str_array_free(arr);
+	memset(arr, 0, sizeof(*arr));
 	start = tmp;
 	for (i = 0;; i++) {
 		char *end, c = tmp[i];
@@ -171,7 +171,6 @@ int wgm_str_array_from_json(struct wgm_str_array *arr, const json_object *jobj)
 		return -EINVAL;
 
 	nr = json_object_array_length(jobj);
-	wgm_str_array_free(arr);
 	for (i = 0; i < nr; i++) {
 		json_object *jstr = json_object_array_get_idx(jobj, i);
 
@@ -296,7 +295,6 @@ int wgm_str_array_del(struct wgm_str_array *arr, size_t idx)
 
 int wgm_str_array_move(struct wgm_str_array *dst, struct wgm_str_array *src)
 {
-	wgm_str_array_free(dst);
 	dst->arr = src->arr;
 	dst->nr = src->nr;
 	memset(src, 0, sizeof(*src));

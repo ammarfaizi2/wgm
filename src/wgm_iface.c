@@ -336,6 +336,32 @@ static int wgm_peer_array_from_json(struct wgm_peer_array *peers, const json_obj
 	return 0;
 }
 
+static int wgm_peer_array_copy(struct wgm_peer_array *dst, const struct wgm_peer_array *src)
+{
+	size_t i;
+	int ret;
+
+	dst->peers = calloc(src->nr, sizeof(*dst->peers));
+	if (!dst->peers) {
+		wgm_log_err("Error: wgm_peer_array_copy: Failed to allocate memory\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < src->nr; i++) {
+		ret = wgm_peer_copy(&dst->peers[i], &src->peers[i]);
+		if (ret) {
+			wgm_log_err("Error: wgm_peer_array_copy: Failed to copy peer data\n");
+			while (i--)
+				wgm_peer_free(&dst->peers[i]);
+			free(dst->peers);
+			return ret;
+		}
+	}
+
+	dst->nr = src->nr;
+	return 0;
+}
+
 static char *wgm_iface_get_file_path(struct wgm_ctx *ctx, const char *devname)
 {
 	char *path;
@@ -611,6 +637,7 @@ void wgm_iface_free(struct wgm_iface *iface)
 {
 	wgm_str_array_free(&iface->addresses);
 	wgm_str_array_free(&iface->allowed_ips);
+	wgm_peer_array_free(&iface->peers);
 	memset(iface, 0, sizeof(*iface));
 }
 
@@ -1019,9 +1046,13 @@ int wgm_iface_cmd_list(int argc, char *argv[], struct wgm_ctx *ctx)
 		return ret;
 	}
 
-	while ((ent = readdir(dir))) {
+	while (1) {
 		size_t len;
 		char *name;
+
+		ent = readdir(dir);
+		if (!ent)
+			break;
 
 		if (ent->d_type != DT_REG)
 			continue;
@@ -1120,7 +1151,7 @@ int wgm_iface_copy(struct wgm_iface *dst, const struct wgm_iface *src)
 {
 	int ret;
 
-	wgm_iface_free(dst);
+	memset(dst, 0, sizeof(*dst));
 	memcpy(dst->ifname, src->ifname, sizeof(dst->ifname));
 	dst->listen_port = src->listen_port;
 	dst->mtu = src->mtu;
@@ -1138,6 +1169,15 @@ int wgm_iface_copy(struct wgm_iface *dst, const struct wgm_iface *src)
 		wgm_str_array_free(&dst->addresses);
 		memset(dst, 0, sizeof(*dst));
 		wgm_log_err("Error: wgm_iface_copy: Failed to copy 'allowed-ips' array\n");
+		return ret;
+	}
+
+	ret = wgm_peer_array_copy(&dst->peers, &src->peers);
+	if (ret) {
+		wgm_str_array_free(&dst->addresses);
+		wgm_str_array_free(&dst->allowed_ips);
+		memset(dst, 0, sizeof(*dst));
+		wgm_log_err("Error: wgm_iface_copy: Failed to copy 'peers' array\n");
 		return ret;
 	}
 
