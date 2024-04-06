@@ -3,10 +3,6 @@
 #include "wgm_iface.h"
 #include "wgm_peer.h"
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include <getopt.h>
 #include <dirent.h>
 
