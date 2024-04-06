@@ -163,7 +163,7 @@ int wgm_parse_csv(struct wgm_str_array *arr, const char *str)
 	return 0;
 }
 
-int wgm_json_to_str_array(struct wgm_str_array *arr, const json_object *jobj)
+int wgm_str_array_from_json(struct wgm_str_array *arr, const json_object *jobj)
 {
 	size_t i, nr;
 

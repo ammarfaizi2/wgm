@@ -19,4 +19,7 @@ int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src);
 void wgm_peer_move(struct wgm_peer *dst, struct wgm_peer *src);
 void wgm_peer_free(struct wgm_peer *peer);
 
+int wgm_peer_to_json(json_object **jobj, const struct wgm_peer *peer);
+int wgm_peer_from_json(struct wgm_peer *peer, const json_object *jobj);
+
 #endif /* #ifndef WGM__WG_PEER_H */

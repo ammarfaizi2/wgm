@@ -268,7 +268,7 @@ int wgm_peer_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 	}
 
 	apply_wgm_arg(&peer, &arg, out_args);
-	ret = wgm_iface_add_peer(&iface, &peer);
+	ret = wgm_iface_add_peer(&iface, &peer, arg.force);
 	if (ret) {
 		wgm_log_err("Error: Failed to add peer to interface '%s': %s\n", arg.ifname, strerror(-ret));
 		goto out;
@@ -324,4 +324,63 @@ void wgm_peer_free(struct wgm_peer *peer)
 {
 	free(peer->allowed_ips.arr);
 	memset(peer, 0, sizeof(*peer));
+}
+
+int wgm_peer_to_json(json_object **jobj, const struct wgm_peer *peer)
+{
+	json_object *jpeer, *jallowed_ips;
+	int ret;
+
+	jpeer = json_object_new_object();
+	if (!jpeer)
+		return -ENOMEM;
+
+	ret = json_object_object_add(jpeer, "public_key",
+				     json_object_new_string(peer->public_key));
+	if (ret)
+		goto out;
+
+	ret = json_object_object_add(jpeer, "bind_ip",
+				     json_object_new_string(peer->bind_ip));
+	if (ret)
+		goto out;
+
+	ret = wgm_str_array_to_json(&jallowed_ips, &peer->allowed_ips);
+	if (ret)
+		goto out;
+
+	ret = json_object_object_add(jpeer, "allowed_ips", jallowed_ips);
+	if (ret)
+		goto out;
+
+	*jobj = jpeer;
+	return 0;
+
+out:
+	json_object_put(jpeer);
+	return ret;
+}
+
+int wgm_peer_from_json(struct wgm_peer *peer, const json_object *jobj)
+{
+	json_object *tmp;
+	int ret;
+
+	ret = json_object_object_get_ex(jobj, "public_key", &tmp);
+	if (!ret)
+		return -EINVAL;
+
+	strncpyl(peer->public_key, json_object_get_string(tmp), sizeof(peer->public_key));
+
+	ret = json_object_object_get_ex(jobj, "bind_ip", &tmp);
+	if (!ret)
+		return -EINVAL;
+
+	strncpyl(peer->bind_ip, json_object_get_string(tmp), sizeof(peer->bind_ip));
+
+	ret = json_object_object_get_ex(jobj, "allowed_ips", &tmp);
+	if (!ret)
+		return -EINVAL;
+
+	return wgm_str_array_from_json(&peer->allowed_ips, tmp);
 }

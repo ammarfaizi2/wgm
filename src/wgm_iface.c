@@ -263,6 +263,79 @@ out:
 	return ret;
 }
 
+static void wgm_peer_array_free(struct wgm_peer_array *peers)
+{
+	size_t i;
+
+	for (i = 0; i < peers->nr; i++)
+		wgm_peer_free(&peers->peers[i]);
+
+	free(peers->peers);
+	memset(peers, 0, sizeof(*peers));
+}
+
+static int wgm_peer_array_to_json(json_object **jobj, const struct wgm_peer_array *peers)
+{
+	json_object *jarr;
+	size_t i;
+	int ret;
+
+	jarr = json_object_new_array();
+	if (!jarr) {
+		wgm_log_err("Error: wgm_peer_array_to_json: Failed to create JSON array\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < peers->nr; i++) {
+		json_object *jpeer;
+
+		ret = wgm_peer_to_json(&jpeer, &peers->peers[i]);
+		if (ret) {
+			wgm_log_err("Error: wgm_peer_array_to_json: Failed to convert peer data to JSON\n");
+			json_object_put(jarr);
+			return ret;
+		}
+
+		json_object_array_add(jarr, jpeer);
+	}
+
+	*jobj = jarr;
+	return 0;
+}
+
+static int wgm_peer_array_from_json(struct wgm_peer_array *peers, const json_object *jarr)
+{
+	size_t i, nr;
+	int ret;
+
+	nr = json_object_array_length(jarr);
+	if (!nr) {
+		peers->peers = NULL;
+		peers->nr = 0;
+		return 0;
+	}
+
+	peers->peers = malloc(nr * sizeof(*peers->peers));
+	if (!peers->peers) {
+		wgm_log_err("Error: wgm_peer_array_from_json: Failed to allocate memory\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < nr; i++) {
+		const json_object *jpeer = json_object_array_get_idx(jarr, i);
+
+		ret = wgm_peer_from_json(&peers->peers[i], jpeer);
+		if (ret) {
+			wgm_log_err("Error: wgm_peer_array_from_json: Failed to parse peer data\n");
+			wgm_peer_array_free(peers);
+			return ret;
+		}
+	}
+
+	peers->nr = nr;
+	return 0;
+}
+
 static char *wgm_iface_get_file_path(struct wgm_ctx *ctx, const char *devname)
 {
 	char *path;
@@ -320,7 +393,7 @@ static int load_key_array(const json_object *jobj, const char *key, struct wgm_s
 	if (!tmp || !json_object_is_type(tmp, json_type_array))
 		return -EINVAL;
 
-	ret = wgm_json_to_str_array(arr, tmp);
+	ret = wgm_str_array_from_json(arr, tmp);
 	if (ret) {
 		wgm_log_err("Error: load_key_array: Failed to parse JSON array\n");
 		return ret;
@@ -331,6 +404,7 @@ static int load_key_array(const json_object *jobj, const char *key, struct wgm_s
 
 static int wgm_iface_load_from_json(struct wgm_iface *iface, const json_object *jobj)
 {
+	json_object *tmp;
 	const char *stmp;
 	int itmp;
 	int ret;
@@ -391,10 +465,27 @@ static int wgm_iface_load_from_json(struct wgm_iface *iface, const json_object *
 		return ret;
 	}
 
+	ret = json_object_object_get_ex(jobj, "peers", &tmp);
+	if (!ret) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Missing 'peers' field\n");
+		return -EINVAL;
+	}
+
+	if (!json_object_is_type(tmp, json_type_array)) {
+		wgm_log_err("Error: wgm_iface_load_from_json: 'peers' field must be an array\n");
+		return -EINVAL;
+	}
+
+	ret = wgm_peer_array_from_json(&iface->peers, tmp);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_load_from_json: Failed to parse 'peers' field\n");
+		return ret;
+	}
+
 	return 0;
 }
 
-int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer)
+static int __wgm_iface_append_peer(struct wgm_iface *iface, const struct wgm_peer *peer)
 {
 	struct wgm_peer	*new_peers;
 	size_t new_nr;
@@ -403,19 +494,50 @@ int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer)
 	new_nr = iface->peers.nr + 1;
 	new_peers = realloc(iface->peers.peers, new_nr * sizeof(*new_peers));
 	if (!new_peers) {
-		wgm_log_err("Error: wgm_iface_add_peer: Failed to allocate memory\n");
+		wgm_log_err("Error: __wgm_iface_append_peer: Failed to allocate memory\n");
 		return -ENOMEM;
 	}
 
 	iface->peers.peers = new_peers;
 	ret = wgm_peer_copy(&new_peers[iface->peers.nr], peer);
 	if (ret) {
-		wgm_log_err("Error: wgm_iface_add_peer: Failed to copy peer data\n");
+		wgm_log_err("Error: __wgm_iface_append_peer: Failed to copy peer data\n");
 		return ret;
 	}
 
 	iface->peers.nr = new_nr;
 	return 0;
+}
+
+int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer, bool force_update)
+{
+	struct wgm_peer tmp;
+	size_t i;
+	int ret;
+
+	memset(&tmp, 0, sizeof(tmp));
+	for (i = 0; i < iface->peers.nr; i++) {
+		if (strcmp(iface->peers.peers[i].public_key, peer->public_key))
+			continue;
+
+		if (!force_update) {
+			wgm_log_err("Error: wgm_iface_add_peer: Peer with public key '%s' already exists, use --force to force update\n",
+				    peer->public_key);
+			return -EEXIST;
+		}
+
+		wgm_peer_move(&tmp, &iface->peers.peers[i]);
+		ret = wgm_peer_copy(&iface->peers.peers[i], peer);
+		if (ret) {
+			wgm_log_err("Error: wgm_iface_add_peer: Failed to copy peer data\n");
+			wgm_peer_move(&iface->peers.peers[i], &tmp);
+			return ret;
+		}
+
+		return 0;
+	}
+
+	return __wgm_iface_append_peer(iface, peer);
 }
 
 int wgm_iface_del_peer(struct wgm_iface *iface, size_t idx)
@@ -582,6 +704,14 @@ int wgm_iface_to_json(json_object **jobj, const struct wgm_iface *iface)
 		return ret;
 	}
 	json_object_object_add(*jobj, "allowed-ips", jarr);
+
+	ret = wgm_peer_array_to_json(&jarr, &iface->peers);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_to_json: Failed to convert 'peers' array to JSON\n");
+		json_object_put(*jobj);
+		return ret;
+	}
+	json_object_object_add(*jobj, "peers", jarr);
 
 	return 0;
 }

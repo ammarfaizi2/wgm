@@ -37,7 +37,7 @@ int wgm_iface_save(const struct wgm_iface *iface, struct wgm_ctx *ctx);
 int wgm_iface_copy(struct wgm_iface *dst, const struct wgm_iface *src);
 void wgm_iface_move(struct wgm_iface *dst, struct wgm_iface *src);
 
-int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer);
+int wgm_iface_add_peer(struct wgm_iface *iface, const struct wgm_peer *peer, bool force_update);
 int wgm_iface_del_peer(struct wgm_iface *iface, size_t idx);
 int wgm_iface_del_peer_by_pubkey(struct wgm_iface *iface, const char *pubkey);
 int wgm_iface_get_peer_by_pubkey(const struct wgm_iface *iface, const char *pubkey, struct wgm_peer **peer);
