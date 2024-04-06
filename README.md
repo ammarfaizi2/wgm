@@ -80,3 +80,25 @@ Options:
     --address "10.45.0.1/24" \
     --allowed-ips "0.0.0.0/0,::/0";
 ```
+
+### 2. Update the MTU size of an interface
+```txt
+./wgm iface update \
+    --dev wgm0 \
+    --mtu 1500;
+```
+
+### 3. Show information about an interface
+```txt
+./wgm iface show --dev wgm0;
+```
+
+### 4. List all interfaces
+```txt
+./wgm iface list;
+```
+
+### 5. Delete an interface
+```txt
+./wgm iface del --dev wgm0;
+```
