@@ -109,3 +109,41 @@ Options:
     --dev wgm0 \
     --private-key "OB5yPRVxfOkp0YZL9FPy4HzFIEZpT/WblEc2eistaVA=";
 ```
+
+# peer command examples
+### 1. Add a new peer to an interface
+```txt
+./wgm peer add \
+    --dev wgm0 \
+    --public-key "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=" \
+    --allowed-ips "10.45.0.2/32" \
+```
+
+### 2. Update the allowed IPs of a peer
+
+Option `--dev` and `--public-key` are required to identify the peer to be updated.
+```txt
+./wgm peer update \
+    --dev wgm0 \
+    --public-key "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=" \
+    --allowed-ips "10.45.0.3/32";
+```
+
+### 3. Show information about a peer
+```txt
+./wgm peer show \
+    --dev wgm0 \
+    --public-key "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=";
+```
+
+### 4. List all peers in an interface
+```txt
+./wgm peer list --dev wgm0;
+```
+
+### 5. Delete a peer from an interface
+```txt
+./wgm peer del \
+    --dev wgm0 \
+    --public-key "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=";
+```
