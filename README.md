@@ -2,7 +2,7 @@
 
 A simple program to manage multiple wireguard interfaces and peers.
 
-# Table of Contents
+# Links
 
 - [Build](#build)
 - [Commands](#commands)
