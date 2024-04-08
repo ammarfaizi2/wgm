@@ -300,3 +300,26 @@ int wgm_str_array_move(struct wgm_str_array *dst, struct wgm_str_array *src)
 	memset(src, 0, sizeof(*src));
 	return 0;
 }
+
+int wgm_asprintf(char **strp, const char *fmt, ...)
+{
+	va_list arg1, arg2;
+	size_t len;
+	char *str;
+
+	va_start(arg1, fmt);
+	va_copy(arg2, arg1);
+	len = vsnprintf(NULL, 0, fmt, arg1);
+	va_end(arg1);
+
+	str = malloc(len + 1);
+	if (!str) {
+		va_end(arg2);
+		return -ENOMEM;
+	}
+
+	vsnprintf(str, len + 1, fmt, arg2);
+	va_end(arg2);
+	*strp = str;
+	return 0;
+}
