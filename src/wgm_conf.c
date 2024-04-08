@@ -8,15 +8,25 @@
 
 static char *get_conf_path(const struct wgm_iface *iface, struct wgm_ctx *ctx)
 {
-	size_t len;
 	char *ret;
+	int err;
 
-	len = strlen(ctx->data_dir) + strlen(iface->ifname) + 32;
-	ret = malloc(len);
-	if (!ret)
+	err = wgm_asprintf(&ret, "%s/wg_conf", ctx->data_dir);
+	if (err < 0)
 		return NULL;
 
-	snprintf(ret, len, "%s/%s.conf", ctx->data_dir, iface->ifname);
+	err = mkdir_recursive(ret, 0700);
+	free(ret);
+	if (err) {
+		wgm_log_err("Failed to create directory '%s': %s\n", ret, strerror(-err));
+		free(ret);
+		return NULL;
+	}
+
+	err = wgm_asprintf(&ret, "%s/wg_conf/%s.conf", ctx->data_dir, iface->ifname);
+	if (err < 0)
+		return NULL;
+
 	return ret;
 }
 
