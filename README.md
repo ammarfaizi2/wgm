@@ -1,8 +1,8 @@
 # Wireguard Manager
 
-A simple program to manage multiple wireguard interfaces and peers.
+A program to manage multiple wireguard interfaces and peers.
 
-# Links
+# Table of Contents
 
 - [Build](#build)
 - [Commands](#commands)
