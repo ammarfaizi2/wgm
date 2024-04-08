@@ -341,28 +341,26 @@ static int wgm_peer_array_copy(struct wgm_peer_array *dst, const struct wgm_peer
 	return 0;
 }
 
-static char *wgm_iface_get_file_path(struct wgm_ctx *ctx, const char *devname)
+static char *wgm_iface_get_json_path(struct wgm_ctx *ctx, const char *devname)
 {
 	char *path;
-	size_t len;
 	int ret;
 
-	len = strlen(ctx->data_dir) + strlen(devname) + 7;
-	path = malloc(len);
-	if (!path) {
-		wgm_log_err("Error: wgm_iface_get_file_path: Failed to allocate memory\n");
+	ret = wgm_asprintf(&path, "%s/json", ctx->data_dir);
+	if (ret)
 		return NULL;
-	}
 
-	ret = mkdir_recursive(ctx->data_dir, 0700);
+	ret = mkdir_recursive(path, 0700);
+	free(path);
 	if (ret) {
-		wgm_log_err("Error: wgm_iface_get_file_path: Failed to create directory '%s': %s\n",
-			    ctx->data_dir, strerror(-ret));
-		free(path);
+		wgm_log_err("Error: wgm_iface_get_json_path: Failed to create directory '%s': %s\n", path, strerror(-ret));
 		return NULL;
 	}
 
-	snprintf(path, len, "%s/%s.json", ctx->data_dir, devname);
+	ret = wgm_asprintf(&path, "%s/json/%s.json", ctx->data_dir, devname);
+	if (ret)
+		return NULL;
+
 	return path;
 }
 
@@ -637,7 +635,7 @@ int wgm_iface_load(struct wgm_iface *iface, struct wgm_ctx *ctx, const char *dev
 	FILE *fp;
 	int ret;
 
-	path = wgm_iface_get_file_path(ctx, devname);
+	path = wgm_iface_get_json_path(ctx, devname);
 	if (!path)
 		return -ENOMEM;
 
@@ -764,7 +762,7 @@ int wgm_iface_del(const struct wgm_iface *iface, struct wgm_ctx *ctx)
 	char *path;
 	int ret;
 
-	path = wgm_iface_get_file_path(ctx, iface->ifname);
+	path = wgm_iface_get_json_path(ctx, iface->ifname);
 	if (!path)
 		return -ENOMEM;
 
@@ -783,7 +781,7 @@ int wgm_iface_save(const struct wgm_iface *iface, struct wgm_ctx *ctx)
 	char *path, *jstr;
 	FILE *fp;
 
-	path = wgm_iface_get_file_path(ctx, iface->ifname);
+	path = wgm_iface_get_json_path(ctx, iface->ifname);
 	if (!path)
 		return -ENOMEM;
 
