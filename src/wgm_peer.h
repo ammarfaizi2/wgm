@@ -8,6 +8,7 @@ struct wgm_peer {
 	char			public_key[256];
 	char			endpoint[128];
 	char			bind_ip[16];
+	char			bind_dev[IFNAMSIZ];
 	struct wgm_str_array	allowed_ips;
 };
 

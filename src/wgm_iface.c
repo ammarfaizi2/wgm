@@ -2,6 +2,7 @@
 #include "wgm.h"
 #include "wgm_iface.h"
 #include "wgm_peer.h"
+#include "wgm_conf.h"
 
 #include <getopt.h>
 #include <dirent.h>
@@ -808,7 +809,7 @@ int wgm_iface_save(const struct wgm_iface *iface, struct wgm_ctx *ctx)
 	free(jstr);
 	fclose(fp);
 	free(path);
-	return 0;
+	return wgm_conf_save(iface, ctx);
 }
 
 static void move_arg_to_iface(struct wgm_iface *iface, struct wgm_iface_arg *arg, uint64_t args)
