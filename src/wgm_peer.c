@@ -9,31 +9,35 @@ struct wgm_peer_arg {
 	char			public_key[256];
 	char			endpoint[128];
 	char			bind_ip[16];
+	char			bind_dev[IFNAMSIZ];
 	struct wgm_str_array	allowed_ips;
 	bool			force;
 };
 
 static const struct wgm_opt options[] = {
-	#define PEER_ARG_DEV		(1ull << 0)
+	#define PEER_ARG_DEV		(1ull << 0ull)
 	{ PEER_ARG_DEV,		"dev",		required_argument,	NULL,	'd' },
 
-	#define PEER_ARG_PUBLIC_KEY	(1ull << 1)
+	#define PEER_ARG_PUBLIC_KEY	(1ull << 1ull)
 	{ PEER_ARG_PUBLIC_KEY,	"public-key",	required_argument,	NULL,	'p' },
 
-	#define PEER_ARG_ENDPOINT	(1ull << 2)
+	#define PEER_ARG_ENDPOINT	(1ull << 2ull)
 	{ PEER_ARG_ENDPOINT,	"endpoint",	required_argument,	NULL,	'e' },
 
-	#define PEER_ARG_BIND_IP	(1ull << 3)
+	#define PEER_ARG_BIND_IP	(1ull << 3ull)
 	{ PEER_ARG_BIND_IP,	"bind-ip",	required_argument,	NULL,	'b' },
 
-	#define PEER_ARG_ALLOWED_IPS	(1ull << 4)
+	#define PEER_ARG_ALLOWED_IPS	(1ull << 4ull)
 	{ PEER_ARG_ALLOWED_IPS,	"allowed-ips",	required_argument,	NULL,	'a' },
 
-	#define PEER_ARG_HELP		(1ull << 5)
+	#define PEER_ARG_HELP		(1ull << 5ull)
 	{ PEER_ARG_HELP,	"help",		no_argument,		NULL,	'h' },
 
-	#define PEER_ARG_FORCE		(1ull << 6)
+	#define PEER_ARG_FORCE		(1ull << 6ull)
 	{ PEER_ARG_FORCE,	"force",	no_argument,		NULL,	'f' },
+
+	#define PEER_ARG_BIND_DEV	(1ull << 7ull)
+	{ PEER_ARG_BIND_DEV,	"bind-dev",	required_argument,	NULL,	'g' },
 
 	{ 0, NULL, 0, NULL, 0 }
 };
@@ -170,6 +174,11 @@ static int wgm_peer_getopt(int argc, char *argv[], struct wgm_peer_arg *arg,
 			arg->force = true;
 			out_args |= PEER_ARG_FORCE;
 			break;
+		case 'g':
+			if (wgm_peer_opt_get_dev(arg->bind_dev, sizeof(arg->bind_dev), optarg))
+				return -EINVAL;
+			out_args |= PEER_ARG_BIND_DEV;
+			break;
 		case '?':
 			ret = -EINVAL;
 			goto out;
@@ -199,6 +208,13 @@ static int wgm_peer_getopt(int argc, char *argv[], struct wgm_peer_arg *arg,
 		}
 	}
 
+	if ((out_args & PEER_ARG_BIND_IP) && !(out_args & PEER_ARG_BIND_DEV)) {
+		wgm_log_err("Error: Option '--bind-ip' needs '--bind-dev'\n\n");
+		wgm_peer_show_usage();
+		ret = -EINVAL;
+		goto out;
+	}
+
 	*out_args_p = out_args;
 
 out:
@@ -221,6 +237,9 @@ static void apply_wgm_arg(struct wgm_peer *peer, struct wgm_peer_arg *arg,
 	if (out_args & PEER_ARG_BIND_IP)
 		memcpy(peer->bind_ip, arg->bind_ip, sizeof(peer->bind_ip));
 
+	if (out_args & PEER_ARG_BIND_DEV)
+		memcpy(peer->bind_dev, arg->bind_dev, sizeof(peer->bind_dev));
+
 	if (out_args & PEER_ARG_ALLOWED_IPS)
 		wgm_str_array_move(&peer->allowed_ips, &arg->allowed_ips);
 }
@@ -232,7 +251,7 @@ int wgm_peer_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx)
 					      PEER_ARG_ALLOWED_IPS;
 	static const uint64_t allowed_args = required_args | PEER_ARG_ENDPOINT |
 					     PEER_ARG_BIND_IP | PEER_ARG_FORCE |
-					     PEER_ARG_HELP;
+					     PEER_ARG_HELP | PEER_ARG_BIND_DEV;
 
 	struct wgm_peer_arg arg;
 	struct wgm_iface iface;
@@ -460,6 +479,7 @@ int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src)
 {
 	memcpy(dst->public_key, src->public_key, sizeof(dst->public_key));
 	memcpy(dst->bind_ip, src->bind_ip, sizeof(dst->bind_ip));
+	memcpy(dst->bind_dev, src->bind_dev, sizeof(dst->bind_dev));
 	return wgm_str_array_copy(&dst->allowed_ips, &src->allowed_ips);
 }
 
@@ -467,6 +487,7 @@ void wgm_peer_move(struct wgm_peer *dst, struct wgm_peer *src)
 {
 	memcpy(dst->public_key, src->public_key, sizeof(dst->public_key));
 	memcpy(dst->bind_ip, src->bind_ip, sizeof(dst->bind_ip));
+	memcpy(dst->bind_dev, src->bind_dev, sizeof(dst->bind_dev));
 	wgm_str_array_move(&dst->allowed_ips, &src->allowed_ips);
 	memset(src, 0, sizeof(*src));
 }
@@ -493,6 +514,11 @@ int wgm_peer_to_json(json_object **jobj, const struct wgm_peer *peer)
 
 	ret = json_object_object_add(jpeer, "bind_ip",
 				     json_object_new_string(peer->bind_ip));
+	if (ret)
+		goto out;
+
+	ret = json_object_object_add(jpeer, "bind_dev",
+				     json_object_new_string(peer->bind_dev));
 	if (ret)
 		goto out;
 

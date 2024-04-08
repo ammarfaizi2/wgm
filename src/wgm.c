@@ -62,6 +62,7 @@ void show_usage_peer(const char *app, bool show_cmds)
 	printf("  -e, --endpoint    Endpoint of the peer\n");
 	printf("  -b, --bind-ip     Bind IP of the peer\n");
 	printf("  -a, --allowed-ips Allowed IPs of the peer\n");
+	printf("  -g, --bind-dev    Interface name to be bound for the peer\n");
 	printf("  -f, --force       Force the operation\n");
 	printf("  -h, --help        Show this help message\n");
 	printf("\n");
