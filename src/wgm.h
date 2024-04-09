@@ -7,6 +7,8 @@
 
 struct wgm_ctx {
 	char	*data_dir;
+	char	*wg_quick_path;
+	char	*wg_conf_path;
 };
 
 #define WGM_JSON_FLAGS (JSON_C_TO_STRING_NOSLASHESCAPE | JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY)

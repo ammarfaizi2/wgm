@@ -27,6 +27,8 @@ struct wgm_iface_array {
 	size_t			nr;
 };
 
+int wgm_iface_cmd_up(int argc, char *argv[], struct wgm_ctx *ctx);
+int wgm_iface_cmd_down(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_cmd_add(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx);
 int wgm_iface_cmd_show(int argc, char *argv[], struct wgm_ctx *ctx);

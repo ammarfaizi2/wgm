@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 #include "helpers.h"
+#include "md5.h"
 
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <limits.h>
 
 void wgm_log_err(const char *fmt, ...)
 {
@@ -322,4 +324,102 @@ int wgm_asprintf(char **strp, const char *fmt, ...)
 	va_end(arg2);
 	*strp = str;
 	return 0;
+}
+
+int wgm_get_realpath(const char *path, char **rp)
+{
+	char *ret;
+
+	ret = realpath(path, NULL);
+	if (!ret)
+		return -errno;
+
+	*rp = ret;
+	return 0;
+}
+
+ssize_t wgm_copy_file(const char *src, const char *dst)
+{
+	size_t total = 0;
+	FILE *sfp, *dfp;
+	int err;
+
+	sfp = fopen(src, "rb");
+	if (!sfp) {
+		err = -errno;
+		wgm_log_err("Failed to open source file '%s': %s\n", src, strerror(-err));
+		return err;
+	}
+
+	dfp = fopen(dst, "wb");
+	if (!dfp) {
+		err = -errno;
+		wgm_log_err("Failed to open destination file '%s': %s\n", dst, strerror(-err));
+		fclose(sfp);
+		return err;
+	}
+
+	while (1) {
+		char buf[4096];
+		size_t len;
+
+		len = fread(buf, 1, sizeof(buf), sfp);
+		if (!len)
+			break;
+
+		if (fwrite(buf, 1, len, dfp) != len) {
+			err = -errno;
+			wgm_log_err("Failed to write to destination file '%s': %s\n", dst, strerror(-err));
+			fclose(sfp);
+			fclose(dfp);
+			remove(dst);
+			return err;
+		}
+
+		total += len;
+		if (ferror(dfp)) {
+			err = -errno;
+			wgm_log_err("Failed to write to destination file '%s': %s\n", dst, strerror(-err));
+			fclose(sfp);
+			fclose(dfp);
+			remove(dst);
+			return err;
+		}
+	}
+
+	fclose(sfp);
+	fclose(dfp);
+	return total;
+}
+
+bool wgm_file_exists(const char *path)
+{
+	struct stat st;
+
+	return !stat(path, &st);
+}
+
+bool wgm_cmp_file_md5(const char *f1, const char *f2)
+{
+	char sum1[33] = { 0 }, sum2[33] = { 0 };
+	bool ret = false;
+	FILE *fp1, *fp2;	
+
+	fp1 = fopen(f1, "rb");
+	fp2 = fopen(f2, "rb");
+	if (!fp1 || !fp2)
+		goto out;
+
+	wgm_md5_file_hex(fp1, sum1);
+	wgm_md5_file_hex(fp2, sum2);
+	if (!memcmp(sum1, sum2, sizeof(sum1)))
+		ret = true;
+
+out:
+	if (fp1)
+		fclose(fp1);
+	if (fp2)
+		fclose(fp2);
+
+	return ret;
 }
