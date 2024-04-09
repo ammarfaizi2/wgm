@@ -68,33 +68,59 @@ void show_usage_peer(const char *app, bool show_cmds)
 	printf("\n");
 }
 
-static int wgm_ctx_init(struct wgm_ctx *ctx)
-{
-	const char *data_dir = getenv("WGM_DATA_DIR");
-	int ret;
-
-	if (!data_dir)
-		data_dir = "./wgm_data";
-
-	ret = mkdir_recursive(data_dir, 0700);
-	if (ret < 0) {
-		fprintf(stderr, "Error: failed to create directory: %s: %s\n", data_dir, strerror(-ret));
-		return ret;
-	}
-
-	ctx->data_dir = strdup(data_dir);
-	if (!ctx->data_dir) {
-		fprintf(stderr, "Error: failed to allocate memory\n");
-		return -ENOMEM;
-	}
-
-	return 0;
-}
-
 static void wgm_ctx_free(struct wgm_ctx *ctx)
 {
 	free(ctx->data_dir);
+	free(ctx->wg_quick_path);
+	free(ctx->wg_conf_path);
 	memset(ctx, 0, sizeof(*ctx));
+}
+
+static int wgm_ctx_init(struct wgm_ctx *ctx)
+{
+	const char *tmp;
+	int ret;
+
+	memset(ctx, 0, sizeof(*ctx));
+
+	tmp = getenv("WGM_DATA_DIR");
+	if (!tmp)
+		tmp = "./wgm_data";
+
+	ret = mkdir_recursive(tmp, 0700);
+	if (ret < 0) {
+		wgm_log_err("Error: wgm_ctx_init: failed to create directory: %s: %s\n", tmp, strerror(-ret));
+		return ret;
+	}
+
+	ctx->data_dir = strdup(tmp);
+	if (!ctx->data_dir) {
+		wgm_log_err("Error: wgm_ctx_init: failed to allocate memory\n");
+		return -ENOMEM;
+	}
+
+	tmp = getenv("WGM_WG_QUICK_PATH");
+	if (!tmp)
+		tmp = "/usr/bin/wg-quick";
+
+	ctx->wg_quick_path = strdup(tmp);
+	if (!ctx->wg_quick_path)
+		goto out_err;
+
+	tmp = getenv("WGM_WG_CONF_PATH");
+	if (!tmp)
+		tmp = "/etc/wireguard";
+
+	ctx->wg_conf_path = strdup(tmp);
+	if (!ctx->wg_conf_path)
+		goto out_err;
+
+	return 0;
+
+out_err:
+	wgm_log_err("Error: wgm_ctx_init: failed to allocate memory\n");
+	wgm_ctx_free(ctx);
+	return -ENOMEM;
 }
 
 static int wgm_ctx_run(int argc, char *argv[], struct wgm_ctx *ctx)
