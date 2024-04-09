@@ -1014,6 +1014,7 @@ int wgm_iface_cmd_list(int argc, char *argv[], struct wgm_ctx *ctx)
 	struct wgm_iface iface;
 	uint64_t out_args = 0;
 	struct dirent *ent;
+	char *dir_path;
 	DIR *dir;
 	int ret;
 
@@ -1025,7 +1026,15 @@ int wgm_iface_cmd_list(int argc, char *argv[], struct wgm_ctx *ctx)
 	if (ret)
 		return ret;
 
-	dir = opendir(ctx->data_dir);
+	ret = wgm_asprintf(&dir_path, "%s/json", ctx->data_dir);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_list: Failed to allocate memory\n");
+		wgm_iface_free_arg(&arg);
+		return -ENOMEM;
+	}
+
+	dir = opendir(dir_path);
+	free(dir_path);
 	if (!dir) {
 		ret = -errno;
 		wgm_log_err("Error: wgm_iface_cmd_list: Failed to open directory '%s': %s\n", ctx->data_dir, strerror(-ret));
