@@ -907,6 +907,74 @@ out:
 	return ret;
 }
 
+int wgm_iface_cmd_up(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	static const uint64_t req_args = IFACE_ARG_DEV;
+	static const uint64_t allowed_args = req_args | IFACE_ARG_HELP;
+
+	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, req_args, &out_args);
+	if (ret)
+		return ret;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_up: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_iface_save(&iface, ctx);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_up: Failed to save interface data: %s\n", strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_conf_up(&iface, ctx);
+
+out:
+	wgm_iface_free(&iface);
+	wgm_iface_free_arg(&arg);
+	return ret;
+}
+
+int wgm_iface_cmd_down(int argc, char *argv[], struct wgm_ctx *ctx)
+{
+	static const uint64_t req_args = IFACE_ARG_DEV;
+	static const uint64_t allowed_args = req_args | IFACE_ARG_HELP;
+
+	struct wgm_iface_arg arg;
+	struct wgm_iface iface;
+	uint64_t out_args = 0;
+	int ret;
+
+	memset(&arg, 0, sizeof(arg));
+	memset(&iface, 0, sizeof(iface));
+
+	ret = wgm_iface_getopt(argc, argv, &arg, allowed_args, req_args, &out_args);
+	if (ret)
+		return ret;
+
+	ret = wgm_iface_load(&iface, ctx, arg.ifname);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_down: Failed to load interface '%s': %s\n", arg.ifname, strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_conf_down(&iface, ctx);
+
+out:
+	wgm_iface_free(&iface);
+	wgm_iface_free_arg(&arg);
+	return ret;
+}
+
 int wgm_iface_cmd_update(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	static const uint64_t req_args = IFACE_ARG_DEV;

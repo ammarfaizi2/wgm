@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 #include "wgm_conf.h"
+#include "md5.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -166,25 +167,27 @@ static int wgm_conf_write_iptables(FILE *h, const struct wgm_iface *iface,
 
 	fprintf(h, "\n");
 
-	fprintf(h, "PostUp   = iptables -t nat -F wgm_%s || true >> /dev/null 2>&1\n", iface->ifname);
-	fprintf(h, "PostUp   = iptables -t nat -N wgm_%s || true >> /dev/null 2>&1\n", iface->ifname);
-	fprintf(h, "PostUp   = iptables -t nat -I POSTROUTING -j wgm_%s || true >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = (iptables -t nat -F wgm_%s || true) >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = (iptables -t nat -N wgm_%s || true) >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = (iptables -t nat -I POSTROUTING -j wgm_%s || true) >> /dev/null 2>&1\n", iface->ifname);
 	fprintf(h, "PostDown = iptables -t nat -D POSTROUTING -j wgm_%s\n", iface->ifname);
 	fprintf(h, "PostDown = iptables -t nat -F wgm_%s\n", iface->ifname);
 	fprintf(h, "PostDown = iptables -t nat -X wgm_%s\n", iface->ifname);
 
 	fprintf(h, "\n");
 
-	fprintf(h, "PostUp   = iptables -t filter -F wgm_%s || true >> /dev/null 2>&1\n", iface->ifname);
-	fprintf(h, "PostUp   = iptables -t filter -N wgm_%s || true >> /dev/null 2>&1\n", iface->ifname);
-	fprintf(h, "PostUp   = iptables -t filter -I FORWARD -j wgm_%s || true >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = (iptables -t filter -F wgm_%s || true) >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = (iptables -t filter -N wgm_%s || true) >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = (iptables -t filter -I FORWARD -j wgm_%s || true) >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = (iptables -t filter -D FORWARD -j wgm_%s || true) >> /dev/null 2>&1\n", iface->ifname);
 	fprintf(h, "PostDown = iptables -t filter -F wgm_%s\n", iface->ifname);
 	fprintf(h, "PostDown = iptables -t filter -X wgm_%s\n", iface->ifname);
 
 	fprintf(h, "\n");
 
-	fprintf(h, "PostUp   = iptables -t mangle -F wgm_%s || true >> /dev/null 2>&1\n", iface->ifname);
-	fprintf(h, "PostUp   = iptables -t mangle -N wgm_%s || true >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = (iptables -t mangle -F wgm_%s || true) >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = (iptables -t mangle -N wgm_%s || true) >> /dev/null 2>&1\n", iface->ifname);
+	fprintf(h, "PostUp   = iptables -t mangle -A PREROUTING -j wgm_%s\n", iface->ifname);
 	fprintf(h, "PostDown = iptables -t mangle -D PREROUTING -j wgm_%s\n", iface->ifname);
 	fprintf(h, "PostDown = iptables -t mangle -F wgm_%s\n", iface->ifname);
 	fprintf(h, "PostDown = iptables -t mangle -X wgm_%s\n", iface->ifname);
@@ -275,6 +278,42 @@ static int wgm_conf_write(FILE *h, const struct wgm_iface *iface,
 	return 0;
 }
 
+int wgm_conf_restart_if_changed(const struct wgm_iface *iface, struct wgm_ctx *ctx)
+{
+	char *path1, *path2;
+	int ret;
+
+	ret = wgm_asprintf(&path1, "%s/wg_conf/%s.conf", ctx->data_dir, iface->ifname);
+	if (ret)
+		return ret;
+
+	ret = wgm_asprintf(&path2, "%s/%s.conf", ctx->wg_conf_path, iface->ifname);
+	if (ret) {
+		free(path1);
+		return ret;
+	}
+
+	if (!wgm_cmp_file_md5(path1, path2)) {
+		printf("Configuration file '%s' has changed, restarting...\n", path1);
+		ret = wgm_conf_down(iface, ctx);
+		if (ret)
+			goto out;
+
+		ret = wgm_copy_file(path1, path2);
+		if (ret < 0) {
+			wgm_log_err("Failed to copy file '%s' to '%s'\n", path1, path2);
+			goto out;
+		}
+
+		ret = wgm_conf_up(iface, ctx);
+	}
+
+out:
+	free(path1);
+	free(path2);
+	return ret;
+}
+
 int wgm_conf_save(const struct wgm_iface *iface, struct wgm_ctx *ctx)
 {
 	char *path = get_conf_path(iface, ctx);
@@ -292,5 +331,61 @@ int wgm_conf_save(const struct wgm_iface *iface, struct wgm_ctx *ctx)
 
 	ret = wgm_conf_write(fp, iface, ctx);
 	free(path);
+	fclose(fp);
+	return ret;
+}
+
+int wgm_conf_up(const struct wgm_iface *iface, struct wgm_ctx *ctx)
+{
+	const char *wqc = ctx->wg_quick_path;
+	char *path1, *path2, *cmd;
+	int ret;
+
+	ret = wgm_asprintf(&path1, "%s/wg_conf/%s.conf", ctx->data_dir, iface->ifname);
+	if (ret)
+		return ret;
+
+	ret = wgm_asprintf(&path2, "%s/%s.conf", ctx->wg_conf_path, iface->ifname);
+	if (ret) {
+		free(path1);
+		return ret;
+	}
+
+	if (!wgm_cmp_file_md5(path1, path2)) {
+		printf("Configuration file '%s' has changed, copying it to '%s'\n", path1, path2);
+		ret = wgm_copy_file(path1, path2);
+		if (ret < 0) {
+			wgm_log_err("Failed to copy file '%s' to '%s'\n", path1, path2);
+			free(path1);
+			free(path2);
+			return ret;
+		}
+	}
+
+	free(path1);
+	free(path2);
+	ret = wgm_asprintf(&cmd, "%s up '%s'", wqc, iface->ifname);
+	if (ret)
+		return ret;
+
+	printf("Executing: %s\n", cmd);
+	ret = system(cmd);
+	free(cmd);
+	return ret;
+}
+
+int wgm_conf_down(const struct wgm_iface *iface, struct wgm_ctx *ctx)
+{
+	const char *wqc = ctx->wg_quick_path;
+	char *cmd;
+	int ret;
+
+	ret = wgm_asprintf(&cmd, "%s down '%s'", wqc, iface->ifname);
+	if (ret)
+		return ret;
+
+	printf("Executing: %s\n", cmd);
+	ret = system(cmd);
+	free(cmd);
 	return ret;
 }

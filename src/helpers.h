@@ -53,5 +53,8 @@ int wgm_str_array_del(struct wgm_str_array *arr, size_t idx);
 int wgm_str_array_move(struct wgm_str_array *dst, struct wgm_str_array *src);
 int wgm_asprintf(char **strp, const char *fmt, ...);
 int wgm_get_realpath(const char *path, char **rp);
+ssize_t wgm_copy_file(const char *src, const char *dst);
+bool wgm_file_exists(const char *path);
+bool wgm_cmp_file_md5(const char *f1, const char *f2);
 
 #endif /* #ifndef WGM__WG_HELPERS_H */

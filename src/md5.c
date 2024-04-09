@@ -297,7 +297,7 @@ static void PHP_MD5Final(unsigned char *result, PHP_MD5_CTX *ctx)
 	result[15] = ctx->d >> 24;
 }
 
-int wgm_md5_file_hex(FILE *fp, char md5sum[32])
+int wgm_md5_file_hex(FILE *fp, char md5sum[33])
 {
 	PHP_MD5_CTX ctx;
 	unsigned char buffer[4096];
@@ -317,7 +317,7 @@ int wgm_md5_file_hex(FILE *fp, char md5sum[32])
 	return 0;
 }
 
-int wgm_md5_hex(const char *data, size_t size, char md5sum[32])
+int wgm_md5_hex(const char *data, size_t size, char md5sum[33])
 {
 	PHP_MD5_CTX ctx;
 	unsigned char digest[16];

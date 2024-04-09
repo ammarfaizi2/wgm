@@ -27,6 +27,8 @@ void show_usage_iface(const char *app, bool show_cmds)
 		printf("  show   - Show information about a WireGuard interface\n");
 		printf("  update - Update an existing WireGuard interface\n");
 		printf("  list   - List all WireGuard interfaces (no options required)\n");
+		printf("  up     - Start a WireGuard interface\n");
+		printf("  down   - Stop a WireGuard interface\n");
 		printf("\n");
 	}
 	printf("Options:\n");
@@ -150,6 +152,12 @@ static int wgm_ctx_run(int argc, char *argv[], struct wgm_ctx *ctx)
 
 		if (!strcmp(argv[2], "list"))
 			return wgm_iface_cmd_list(argc - 1, argv + 1, ctx);
+
+		if (!strcmp(argv[2], "up"))
+			return wgm_iface_cmd_up(argc - 1, argv + 1, ctx);
+
+		if (!strcmp(argv[2], "down"))
+			return wgm_iface_cmd_down(argc - 1, argv + 1, ctx);
 
 		fprintf(stderr, "Error: unknown command: %s\n\n", argv[2]);
 		show_usage_iface(argv[0], true);
