@@ -351,12 +351,13 @@ static char *wgm_iface_get_json_path(struct wgm_ctx *ctx, const char *devname)
 		return NULL;
 
 	ret = mkdir_recursive(path, 0700);
-	free(path);
 	if (ret) {
 		wgm_log_err("Error: wgm_iface_get_json_path: Failed to create directory '%s': %s\n", path, strerror(-ret));
+		free(path);
 		return NULL;
 	}
 
+	free(path);
 	ret = wgm_asprintf(&path, "%s/json/%s.json", ctx->data_dir, devname);
 	if (ret)
 		return NULL;
@@ -582,8 +583,6 @@ int wgm_iface_del_peer_by_pubkey(struct wgm_iface *iface, const char *pubkey)
 	int ret;
 
 	for (i = 0; i < iface->peers.nr; i++) {
-		printf("iface->peers.peers[i].public_key: '%s'\n", iface->peers.peers[i].public_key);
-		printf("pubkey: '%s'\n", pubkey);
 		if (strcmp(iface->peers.peers[i].public_key, pubkey))
 			continue;
 
@@ -967,6 +966,7 @@ int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
 		goto out;
 	}
 
+	ret = wgm_iface_del(&iface, ctx);
 out:
 	wgm_iface_free(&iface);
 	wgm_iface_free_arg(&arg);
@@ -1013,6 +1013,7 @@ int wgm_iface_cmd_list(int argc, char *argv[], struct wgm_ctx *ctx)
 	struct wgm_iface iface;
 	uint64_t out_args = 0;
 	struct dirent *ent;
+	char *dir_path;
 	DIR *dir;
 	int ret;
 
@@ -1024,7 +1025,15 @@ int wgm_iface_cmd_list(int argc, char *argv[], struct wgm_ctx *ctx)
 	if (ret)
 		return ret;
 
-	dir = opendir(ctx->data_dir);
+	ret = wgm_asprintf(&dir_path, "%s/json", ctx->data_dir);
+	if (ret) {
+		wgm_log_err("Error: wgm_iface_cmd_list: Failed to allocate memory\n");
+		wgm_iface_free_arg(&arg);
+		return -ENOMEM;
+	}
+
+	dir = opendir(dir_path);
+	free(dir_path);
 	if (!dir) {
 		ret = -errno;
 		wgm_log_err("Error: wgm_iface_cmd_list: Failed to open directory '%s': %s\n", ctx->data_dir, strerror(-ret));
