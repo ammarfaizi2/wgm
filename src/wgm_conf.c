@@ -16,13 +16,13 @@ static char *get_conf_path(const struct wgm_iface *iface, struct wgm_ctx *ctx)
 		return NULL;
 
 	err = mkdir_recursive(ret, 0700);
-	free(ret);
 	if (err) {
 		wgm_log_err("Failed to create directory '%s': %s\n", ret, strerror(-err));
 		free(ret);
 		return NULL;
 	}
 
+	free(ret);
 	err = wgm_asprintf(&ret, "%s/wg_conf/%s.conf", ctx->data_dir, iface->ifname);
 	if (err < 0)
 		return NULL;

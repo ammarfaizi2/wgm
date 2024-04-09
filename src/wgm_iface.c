@@ -351,12 +351,13 @@ static char *wgm_iface_get_json_path(struct wgm_ctx *ctx, const char *devname)
 		return NULL;
 
 	ret = mkdir_recursive(path, 0700);
-	free(path);
 	if (ret) {
 		wgm_log_err("Error: wgm_iface_get_json_path: Failed to create directory '%s': %s\n", path, strerror(-ret));
+		free(path);
 		return NULL;
 	}
 
+	free(path);
 	ret = wgm_asprintf(&path, "%s/json/%s.json", ctx->data_dir, devname);
 	if (ret)
 		return NULL;
