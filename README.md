@@ -89,6 +89,7 @@ Options:
   -e, --endpoint    Endpoint of the peer
   -b, --bind-ip     Bind IP of the peer
   -a, --allowed-ips Allowed IPs of the peer
+  -g, --bind-dev    Interface name to be bound for the peer
   -f, --force       Force the operation
   -h, --help        Show this help message
 
