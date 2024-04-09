@@ -50,7 +50,7 @@ Commands:
 # iface subcommands
 ```txt
 $ ./wgm iface
-Usage: ./wgm iface [add|del|show|update|list] [OPTIONS]
+Usage: ./wgm iface [add|del|show|update|list|up|down] [OPTIONS]
 
 Commands:
   add    - Add a new WireGuard interface
@@ -58,6 +58,8 @@ Commands:
   show   - Show information about a WireGuard interface
   update - Update an existing WireGuard interface
   list   - List all WireGuard interfaces (no options required)
+  up     - Start a WireGuard interface
+  down   - Stop a WireGuard interface
 
 Options:
   -d, --dev <name>          Interface name
