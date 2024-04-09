@@ -109,11 +109,49 @@ Options:
     --allowed-ips "0.0.0.0/0,::/0";
 ```
 
+Output:
+```json
+{
+  "dev": "wgm0",
+  "listen-port": 443,
+  "private-key": "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=",
+  "mtu": 1420,
+  "address": [
+    "10.45.0.1/24"
+  ],
+  "allowed-ips": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "peers": [
+  ]
+}
+```
+
 ### A.2. Update the MTU size of an interface
 
 Option `--dev` is required to select the interface to be updated.
 ```txt
-./wgm iface update --dev wgm0 --mtu 1500;
+./wgm iface update --dev wgm0 --mtu 1400;
+```
+
+Output:
+```json
+{
+  "dev": "wgm0",
+  "listen-port": 443,
+  "private-key": "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=",
+  "mtu": 1400,
+  "address": [
+    "10.45.0.1/24"
+  ],
+  "allowed-ips": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "peers": [
+  ]
+}
 ```
 
 ### A.3. Show information about an interface
@@ -122,10 +160,50 @@ Option `--dev` is required to select the interface to be updated.
 ./wgm iface show --dev wgm0;
 ```
 
+Output:
+```json
+{
+  "dev": "wgm0",
+  "listen-port": 443,
+  "private-key": "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=",
+  "mtu": 1400,
+  "address": [
+    "10.45.0.1/24"
+  ],
+  "allowed-ips": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "peers": [
+  ]
+}
+```
+
 ### A.4. List all interfaces
 
 ```txt
 ./wgm iface list;
+```
+
+Output:
+```json
+[
+  {
+    "dev": "wgm0",
+    "listen-port": 443,
+    "private-key": "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=",
+    "mtu": 1400,
+    "address": [
+      "10.45.0.1/24"
+    ],
+    "allowed-ips": [
+      "0.0.0.0/0",
+      "::/0"
+    ],
+    "peers": [
+    ]
+  }
+]
 ```
 
 ### A.5. Delete an interface
@@ -134,6 +212,7 @@ Option `--dev` is required to select the interface to be deleted.
 ```txt
 ./wgm iface del --dev wgm0;
 ```
+(No output).
 
 ### A.6. Update the private key of an interface
 
@@ -142,6 +221,25 @@ Option `--dev` is required to select the interface to be updated.
 ./wgm iface update \
     --dev wgm0 \
     --private-key "OB5yPRVxfOkp0YZL9FPy4HzFIEZpT/WblEc2eistaVA=";
+```
+
+Output:
+```json
+{
+  "dev": "wgm0",
+  "listen-port": 443,
+  "private-key": "OB5yPRVxfOkp0YZL9FPy4HzFIEZpT/WblEc2eistaVA=",
+  "mtu": 1420,
+  "address": [
+    "10.45.0.1/24"
+  ],
+  "allowed-ips": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "peers": [
+  ]
+}
 ```
 
 ### A.7. Update many options of an interface at once
@@ -153,6 +251,25 @@ Option `--dev` is required to select the interface to be updated.
     --mtu 1420 \
     --listen-port 443 \
     --private-key "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=";
+```
+
+Output:
+```json
+{
+  "dev": "wgm0",
+  "listen-port": 443,
+  "private-key": "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=",
+  "mtu": 1420,
+  "address": [
+    "10.45.0.1/24"
+  ],
+  "allowed-ips": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "peers": [
+  ]
+}
 ```
 
 # B. peer command examples
@@ -167,6 +284,33 @@ Option `--dev` is required to select the interface where the peer will be added.
     --allowed-ips "10.45.0.2/32";
 ```
 
+Output:
+```json
+{
+  "dev": "wgm0",
+  "listen-port": 443,
+  "private-key": "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=",
+  "mtu": 1420,
+  "address": [
+    "10.45.0.1/24"
+  ],
+  "allowed-ips": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "peers": [
+    {
+      "public_key": "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=",
+      "bind_ip": "",
+      "bind_dev": "",
+      "allowed_ips": [
+        "10.45.0.2/32"
+      ]
+    }
+  ]
+}
+```
+
 ### B.2. Update the allowed IPs of a peer
 
 Option `--dev` and `--public-key` are required to select the peer to be updated.
@@ -175,6 +319,33 @@ Option `--dev` and `--public-key` are required to select the peer to be updated.
     --dev wgm0 \
     --public-key "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=" \
     --allowed-ips "10.45.0.3/32";
+```
+
+Output:
+```json
+{
+  "dev": "wgm0",
+  "listen-port": 443,
+  "private-key": "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=",
+  "mtu": 1420,
+  "address": [
+    "10.45.0.1/24"
+  ],
+  "allowed-ips": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "peers": [
+    {
+      "public_key": "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=",
+      "bind_ip": "",
+      "bind_dev": "",
+      "allowed_ips": [
+        "10.45.0.3/32"
+      ]
+    }
+  ]
+}
 ```
 
 ### B.3. Show information about a peer
@@ -186,12 +357,39 @@ Option `--dev` and `--public-key` are required to select the peer to be shown.
     --public-key "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=";
 ```
 
+Output:
+```json
+{
+  "public_key": "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=",
+  "bind_ip": "",
+  "bind_dev": "",
+  "allowed_ips": [
+    "10.45.0.3/32"
+  ]
+}
+```
+
 ### B.4. List all peers in an interface
 
 Option `--dev` is required to select the interface.
 ```txt
 ./wgm peer list --dev wgm0;
 ```
+
+Output:
+```json
+[
+  {
+    "public_key": "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=",
+    "bind_ip": "",
+    "bind_dev": "",
+    "allowed_ips": [
+      "10.45.0.3/32"
+    ]
+  }
+]
+```
+
 
 ### B.5. Delete a peer from an interface
 
@@ -200,4 +398,23 @@ Option `--dev` and `--public-key` are required to select the peer to be deleted.
 ./wgm peer del \
     --dev wgm0 \
     --public-key "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=";
+```
+
+Output:
+```json
+{
+  "dev": "wgm0",
+  "listen-port": 443,
+  "private-key": "EDVfpFI5OcH2Jd0VtK9zlXPqhZaQ77NwnC4eHKHRaU8=",
+  "mtu": 1420,
+  "address": [
+    "10.45.0.1/24"
+  ],
+  "allowed-ips": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "peers": [
+  ]
+}
 ```
