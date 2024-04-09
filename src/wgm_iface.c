@@ -968,6 +968,7 @@ int wgm_iface_cmd_del(int argc, char *argv[], struct wgm_ctx *ctx)
 		goto out;
 	}
 
+	ret = wgm_iface_del(&iface, ctx);
 out:
 	wgm_iface_free(&iface);
 	wgm_iface_free_arg(&arg);
