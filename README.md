@@ -164,7 +164,7 @@ Option `--dev` is required to select the interface where the peer will be added.
 ./wgm peer add \
     --dev wgm0 \
     --public-key "O3mF2EK82IpXaxyaDY50Jkuoes/IzNc42tD8ffYlyBo=" \
-    --allowed-ips "10.45.0.2/32" \
+    --allowed-ips "10.45.0.2/32";
 ```
 
 ### B.2. Update the allowed IPs of a peer
