@@ -19,7 +19,7 @@ void show_usage_iface(const char *app, bool show_cmds)
 	if (!app)
 		app = "wgm";
 
-	printf("Usage: %s iface [add|del|show|update|list] [OPTIONS]\n\n", app);
+	printf("Usage: %s iface [add|del|show|update|list|up|down] [OPTIONS]\n\n", app);
 	if (show_cmds) {
 		printf("Commands:\n");
 		printf("  add    - Add a new WireGuard interface\n");
