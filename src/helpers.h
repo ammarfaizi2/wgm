@@ -52,5 +52,6 @@ int wgm_str_array_add(struct wgm_str_array *arr, const char *str);
 int wgm_str_array_del(struct wgm_str_array *arr, size_t idx);
 int wgm_str_array_move(struct wgm_str_array *dst, struct wgm_str_array *src);
 int wgm_asprintf(char **strp, const char *fmt, ...);
+int wgm_get_realpath(const char *path, char **rp);
 
 #endif /* #ifndef WGM__WG_HELPERS_H */

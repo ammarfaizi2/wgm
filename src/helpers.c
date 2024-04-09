@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <limits.h>
 
 void wgm_log_err(const char *fmt, ...)
 {
@@ -321,5 +322,17 @@ int wgm_asprintf(char **strp, const char *fmt, ...)
 	vsnprintf(str, len + 1, fmt, arg2);
 	va_end(arg2);
 	*strp = str;
+	return 0;
+}
+
+int wgm_get_realpath(const char *path, char **rp)
+{
+	char *ret;
+
+	ret = realpath(path, NULL);
+	if (!ret)
+		return -errno;
+
+	*rp = ret;
 	return 0;
 }
