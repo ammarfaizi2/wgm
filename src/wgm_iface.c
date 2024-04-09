@@ -583,8 +583,6 @@ int wgm_iface_del_peer_by_pubkey(struct wgm_iface *iface, const char *pubkey)
 	int ret;
 
 	for (i = 0; i < iface->peers.nr; i++) {
-		printf("iface->peers.peers[i].public_key: '%s'\n", iface->peers.peers[i].public_key);
-		printf("pubkey: '%s'\n", pubkey);
 		if (strcmp(iface->peers.peers[i].public_key, pubkey))
 			continue;
 
