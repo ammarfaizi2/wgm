@@ -19,7 +19,7 @@ A program to manage multiple wireguard interfaces and peers.
   - [A.4. List all interfaces](#a4-list-all-interfaces)
   - [A.5. Delete an interface](#a5-delete-an-interface)
   - [A.6. Update the private key of an interface](#a6-update-the-private-key-of-an-interface)
-  - [A.7. Update many options of an interface at once.](#a7-update-many-options-of-an-interface-at-once)
+  - [A.7. Update many options of an interface at once](#a7-update-many-options-of-an-interface-at-once)
 
 - [B. peer command examples](#b-peer-command-examples)
   - [B.1. Add a new peer to an interface](#b1-add-a-new-peer-to-an-interface)
@@ -144,7 +144,7 @@ Option `--dev` is required to select the interface to be updated.
     --private-key "OB5yPRVxfOkp0YZL9FPy4HzFIEZpT/WblEc2eistaVA=";
 ```
 
-### A.7. Update many options of an interface at once.
+### A.7. Update many options of an interface at once
 
 Option `--dev` is required to select the interface to be updated.
 ```txt
