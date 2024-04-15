@@ -87,7 +87,7 @@ static int get_fwmark(unsigned *mark, const char *src, const char *ip,
 
 	fp = fopen(fpath, "rb+");
 	if (!fp) {
-		unsigned tmp_mark;
+		unsigned tmp_mark = 0;
 
 		fp = fopen(fpath, "wb");
 		if (!fp) {
