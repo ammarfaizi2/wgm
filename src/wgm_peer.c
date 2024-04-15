@@ -555,6 +555,12 @@ int wgm_peer_from_json(struct wgm_peer *peer, const json_object *jobj)
 
 	strncpyl(peer->bind_ip, json_object_get_string(tmp), sizeof(peer->bind_ip));
 
+	ret = json_object_object_get_ex(jobj, "bind_dev", &tmp);
+	if (!ret)
+		return -EINVAL;
+
+	strncpyl(peer->bind_dev, json_object_get_string(tmp), sizeof(peer->bind_dev));
+
 	ret = json_object_object_get_ex(jobj, "allowed_ips", &tmp);
 	if (!ret)
 		return -EINVAL;
