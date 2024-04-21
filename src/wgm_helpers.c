@@ -186,6 +186,78 @@ out_err:
 	return 0;
 }
 
+int wgm_array_str_to_csv(const struct wgm_array_str *arr, char **csv)
+{
+	size_t i, len;
+	char *buf, *ptr;
+
+	if (!arr || !csv)
+		return -EINVAL;
+
+	len = 0;
+	for (i = 0; i < arr->len; i++)
+		len += strlen(arr->arr[i]) + 1;
+
+	buf = malloc(len);
+	if (!buf)
+		return -ENOMEM;
+
+	ptr = buf;
+	for (i = 0; i < arr->len; i++) {
+		strcpy(ptr, arr->arr[i]);
+		ptr += strlen(arr->arr[i]);
+		*ptr++ = ',';
+	}
+
+	*--ptr = '\0';
+	*csv = buf;
+	return 0;
+}
+
+static char *trim_str(char *str)
+{
+	char *end;
+
+	while (*str == ' ' || *str == '\t')
+		str++;
+
+	end = str + strlen(str) - 1;
+	while (end > str && (*end == ' ' || *end == '\t'))
+		end--;
+
+	end[1] = '\0';
+	return str;
+}
+
+int wgm_array_str_from_csv(struct wgm_array_str *arr, const char *csv)
+{
+	char *str, *str_copy, *saveptr;
+	struct wgm_array_str tmp;
+	size_t ret;
+
+	if (!arr || !csv)
+		return -EINVAL;
+
+	memset(&tmp, 0, sizeof(tmp));
+	str_copy = strdup(csv);
+	if (!str_copy)
+		return -ENOMEM;
+
+	for (str = strtok_r(str_copy, ",", &saveptr); str; str = strtok_r(NULL, ",", &saveptr)) {
+		ret = wgm_array_str_add(&tmp, trim_str(str));
+		if (ret) {
+			free(str_copy);
+			wgm_array_str_free(&tmp);
+			return ret;
+		}
+	}
+
+	free(str_copy);
+	wgm_array_str_move(arr, &tmp);
+	return 0;
+
+}
+
 int wgm_file_open(wgm_file_t *file, const char *path, const char *mode)
 {
 	if (!file || !path || !mode)
@@ -309,4 +381,65 @@ int wgm_file_put_contents(wgm_file_t *file, const char *contents, size_t len)
 		return -EIO;
 
 	return 0;
+}
+
+int wgm_create_getopt_long_args(struct option **long_opt_p, char **short_opt_p,
+				const struct wgm_opt *opts, size_t nr_opts)
+{
+	struct option *lo;
+	size_t i, j;
+	char *so;
+
+	lo = malloc(sizeof(*lo) * (nr_opts + 1));
+	if (!lo)
+		return -ENOMEM;
+
+	so = malloc(nr_opts * 2 + 1);
+	if (!so) {
+		free(lo);
+		return -ENOMEM;
+	}
+
+	j = 0;
+	for (i = 0; i < nr_opts; i++) {
+		if (!opts[i].name)
+			break;
+
+		char *name = strdup(opts[i].name);
+		if (!name)
+			goto out_free;
+
+		lo[i].name = name;
+		lo[i].has_arg = opts[i].has_arg;
+		lo[i].flag = opts[i].flag;
+		lo[i].val = opts[i].val;
+		so[j++] = opts[i].val;
+		if (opts[i].has_arg != no_argument)
+			so[j++] = ':';
+	}
+
+	so[j] = '\0';
+	memset(&lo[i], 0, sizeof(*lo));
+	*long_opt_p = lo;
+	*short_opt_p = so;
+	return 0;
+
+out_free:
+	while (i--)
+		free((char *)lo[i].name);
+
+	free(so);
+	free(lo);
+	return -ENOMEM;
+}
+
+void wgm_free_getopt_long_args(struct option *long_opt, char *short_opt)
+{
+	size_t i;
+
+	for (i = 0; long_opt[i].name; i++)
+		free((char *)long_opt[i].name);
+
+	free(short_opt);
+	free(long_opt);
 }
