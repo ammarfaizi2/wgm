@@ -4,6 +4,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/file.h>
+#include <stdarg.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "wgm_helpers.h"
 
@@ -349,6 +352,7 @@ int wgm_file_get_contents(wgm_file_t *file, char **contents, size_t *len)
 		goto out_revert;
 	}
 
+	*len = (size_t)ret;
 	buf = malloc(*len + 1);
 	if (!buf) {
 		ret = -ENOMEM;
@@ -442,4 +446,137 @@ void wgm_free_getopt_long_args(struct option *long_opt, char *short_opt)
 
 	free(short_opt);
 	free(long_opt);
+}
+
+int wgm_asprintf(char **strp, const char *fmt, ...)
+{
+	va_list ap1, ap2;
+	size_t len;
+	char *buf;
+
+	va_start(ap1, fmt);
+	va_copy(ap2, ap1);
+	len = (size_t)vsnprintf(NULL, 0, fmt, ap1);
+	va_end(ap1);
+
+	buf = malloc(len + 1);
+	if (!buf) {
+		va_end(ap2);
+		return -ENOMEM;
+	}
+
+	vsnprintf(buf, len + 1, fmt, ap2);
+	va_end(ap2);
+	*strp = buf;
+	return 0;
+}
+
+int wgm_vasprintf(char **strp, const char *fmt, va_list ap)
+{
+	va_list ap_copy;
+	size_t len;
+	char *buf;
+
+	va_copy(ap_copy, ap);
+	len = (size_t)vsnprintf(NULL, 0, fmt, ap_copy);
+	va_end(ap_copy);
+
+	buf = malloc(len + 1);
+	if (!buf)
+		return -ENOMEM;
+
+	len += (size_t)vsnprintf(buf, len + 1, fmt, ap);
+	*strp = buf;
+	return 0;
+}
+
+static int __mkdir_exist_ok(const char *path, mode_t mode)
+{
+	int ret;
+
+	ret = mkdir(path, mode);
+	if (ret < 0) {
+		ret = -errno;
+		if (ret != -EEXIST)
+			return ret;
+	}
+
+	return 0;
+}
+
+int wgm_mkdir_recursive(const char *path, mode_t mode)
+{
+	char *tmp, *p;
+	int ret;
+
+	tmp = strdup(path);
+	if (!tmp)
+		return -ENOMEM;
+
+	for (p = tmp + 1; *p; p++) {
+		if (*p != '/')
+			continue;
+		
+		*p = '\0';
+		ret = __mkdir_exist_ok(tmp, mode);
+		if (ret < 0)
+			goto out;
+		*p = '/';
+	}
+
+	ret = __mkdir_exist_ok(tmp, mode);
+out:
+	free(tmp);
+	return ret;
+}
+
+int wgm_err_log(const char *fmt, ...)
+{
+	va_list ap;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	return ret;
+}
+
+static struct wgm_array_str err_elog;
+
+int wgm_err_elog_add(const char *fmt, ...)
+{
+	size_t len;
+	va_list ap;
+	char *buf;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = wgm_vasprintf(&buf, fmt, ap);
+	va_end(ap);
+
+	if (ret)
+		return ret;
+
+	len = (size_t)ret;
+	ret = wgm_array_str_add(&err_elog, buf);
+	free(buf);
+	if (!ret)
+		ret = (int)len;
+
+	return ret;
+}
+
+void wgm_err_elog_flush(void)
+{
+	size_t i;
+
+	if (!err_elog.len)
+		return;
+
+	fprintf(stderr, "---------------------------------------------------\n\n");
+	for (i = 0; i < err_elog.len; i++)
+		fprintf(stderr, "  %s\n", err_elog.arr[i]);
+	fprintf(stderr, "---------------------------------------------------\n");
+	wgm_array_str_free(&err_elog);
 }

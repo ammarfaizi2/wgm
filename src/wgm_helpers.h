@@ -4,8 +4,10 @@
 
 #include <stdio.h>
 #include <json-c/json.h>
+#include <sys/file.h>
 #include <errno.h>
 #include <getopt.h>
+#include <stdarg.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -56,5 +58,12 @@ int wgm_file_put_contents(wgm_file_t *file, const char *contents, size_t len);
 int wgm_create_getopt_long_args(struct option **long_opt_p, char **short_opt_p,
 				const struct wgm_opt *opts, size_t nr_opts);
 void wgm_free_getopt_long_args(struct option *long_opt, char *short_opt);
+
+int wgm_asprintf(char **strp, const char *fmt, ...);
+int wgm_vasprintf(char **strp, const char *fmt, va_list ap);
+int wgm_mkdir_recursive(const char *path, mode_t mode);
+int wgm_err_log(const char *fmt, ...);
+int wgm_err_elog_add(const char *fmt, ...);
+void wgm_err_elog_flush(void);
 
 #endif /* #ifndef WGM__WG_HELPERS_H */

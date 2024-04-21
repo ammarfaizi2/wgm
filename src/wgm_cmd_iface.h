@@ -11,8 +11,14 @@ struct wgm_iface {
 	char			ifname[IFNAMSIZ];
 	char			private_key[128];
 	uint16_t		listen_port;
+	uint16_t		mtu;
 	struct wgm_array_str	addresses;
 	struct wgm_array_peer	peers;
+};
+
+struct wgm_iface_hdl {
+	struct wgm_ctx		*ctx;
+	wgm_file_t		file;
 };
 
 struct wgm_array_iface {
@@ -22,6 +28,11 @@ struct wgm_array_iface {
 
 void wgm_cmd_iface_show_usage(const char *app, int show_cmds);
 int wgm_cmd_iface(int argc, char *argv[], struct wgm_ctx *ctx);
+
+int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev);
+int wgm_iface_hdl_close(struct wgm_iface_hdl *hdl);
+int wgm_iface_hdl_load(struct wgm_iface_hdl *hdl, struct wgm_iface *iface);
+int wgm_iface_hdl_store(struct wgm_iface_hdl *hdl, struct wgm_iface *iface);
 
 int wgm_iface_to_json(const struct wgm_iface *iface, json_object **ret);
 int wgm_iface_from_json(struct wgm_iface *iface, const json_object *obj);
