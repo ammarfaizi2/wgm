@@ -6,7 +6,7 @@
 
 struct wgm_peer {
 	char			public_key[128];
-	struct wgm_array_str	ips;
+	struct wgm_array_str	addresses;
 };
 
 struct wgm_array_peer {

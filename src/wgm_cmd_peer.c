@@ -26,11 +26,11 @@ int wgm_peer_to_json(const struct wgm_peer *peer, json_object **ret)
 	if (err)
 		goto out_err;
 
-	err = wgm_array_str_to_json(&peer->ips, &tmp);
+	err = wgm_array_str_to_json(&peer->addresses, &tmp);
 	if (err)
 		goto out_err;
 
-	err = json_object_object_add(*ret, "ips", tmp);
+	err = json_object_object_add(*ret, "addresses", tmp);
 	if (err)
 		goto out_err;
 
