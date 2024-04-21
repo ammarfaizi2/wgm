@@ -29,7 +29,7 @@ struct wgm_array_iface {
 void wgm_cmd_iface_show_usage(const char *app, int show_cmds);
 int wgm_cmd_iface(int argc, char *argv[], struct wgm_ctx *ctx);
 
-int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev);
+int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_new);
 int wgm_iface_hdl_close(struct wgm_iface_hdl *hdl);
 int wgm_iface_hdl_load(struct wgm_iface_hdl *hdl, struct wgm_iface *iface);
 int wgm_iface_hdl_store(struct wgm_iface_hdl *hdl, struct wgm_iface *iface);

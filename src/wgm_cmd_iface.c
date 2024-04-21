@@ -240,7 +240,7 @@ static int wg_cmd_iface_add(const char *app, struct wgm_ctx *ctx,
 	wg_apply_def_to_iface(&iface);
 
 	hdl.ctx = ctx;
-	ret = wgm_iface_hdl_open(&hdl, arg->dev);
+	ret = wgm_iface_hdl_open(&hdl, arg->dev, true);
 	if (ret) {
 		wgm_err_elog_add("Failed to open interface file: %s: %s\n", arg->dev, strerror(-ret));
 		return ret;
@@ -278,6 +278,58 @@ out:
 	return ret;
 }
 
+static int wg_cmd_iface_del(const char *app, struct wgm_ctx *ctx,
+			    struct wgm_iface_arg *arg, uint64_t arg_bits)
+{
+	return 0;
+}
+
+static int wg_cmd_iface_update(const char *app, struct wgm_ctx *ctx,
+			       struct wgm_iface_arg *arg, uint64_t arg_bits)
+{
+	const uint64_t required_bits = IFACE_OPT_DEV;
+	const uint64_t allowed_bits = IFACE_OPT_DEV | IFACE_OPT_PRIVATE_KEY |
+				      IFACE_OPT_LISTEN_PORT | IFACE_OPT_ADDRS |
+				      IFACE_OPT_MTU | IFACE_OPT_FORCE | IFACE_OPT_UP;
+
+	struct wgm_iface_hdl hdl;
+	struct wgm_iface iface;
+	int ret;
+
+	if (!validate_args(app, arg, arg_bits, required_bits, allowed_bits))
+		return -EINVAL;
+
+	hdl.ctx = ctx;
+	ret = wgm_iface_hdl_open(&hdl, arg->dev, false);
+	if (ret) {
+		wgm_err_elog_add("Failed to open interface file: %s: %s\n", arg->dev, strerror(-ret));
+		return ret;
+	}
+
+	ret = wgm_iface_hdl_load(&hdl, &iface);
+	if (ret) {
+		wgm_err_elog_add("Failed to load interface file: %s: %s\n", arg->dev, strerror(-ret));
+		goto out;
+	}
+
+	ret = wg_apply_arg_to_iface(&iface, arg, arg_bits);
+	if (ret) {
+		wgm_err_elog_add("Failed to apply arguments to interface: %s\n", strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_iface_hdl_store(&hdl, &iface);
+	if (ret) {
+		wgm_err_elog_add("Failed to store interface: %s: %s\n", arg->dev, strerror(-ret));
+		goto out;
+	}
+
+out:
+	wgm_iface_hdl_close(&hdl);
+	wgm_iface_free(&iface);
+	return ret;
+}
+
 static int wgm_cmd_iface_run(const char *app, struct wgm_ctx *ctx, const char *cmd,
 			     struct wgm_iface_arg *arg, uint64_t arg_bits)
 {
@@ -289,6 +341,12 @@ static int wgm_cmd_iface_run(const char *app, struct wgm_ctx *ctx, const char *c
 
 	if (!strcmp(cmd, "add"))
 		return wg_cmd_iface_add(app, ctx, arg, arg_bits);
+
+	if (!strcmp(cmd, "del"))
+		return wg_cmd_iface_del(app, ctx, arg, arg_bits);
+
+	if (!strcmp(cmd, "update"))
+		return wg_cmd_iface_update(app, ctx, arg, arg_bits);
 
 	return -EINVAL;
 }
@@ -429,7 +487,7 @@ out:
 	return ret;
 }
 
-int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev)
+int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_new)
 {
 	char *path;
 	int ret;
@@ -439,7 +497,7 @@ int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev)
 		return ret;
 
 	ret = wgm_file_open_lock(&hdl->file, path, "rb+", LOCK_EX);
-	if (ret == -ENOENT)
+	if (ret == -ENOENT && create_new)
 		ret = wgm_file_open_lock(&hdl->file, path, "wb+", LOCK_EX);
 
 	if (!ret)

@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "wgm_helpers.h"
 
@@ -377,8 +378,14 @@ out_revert:
 
 int wgm_file_put_contents(wgm_file_t *file, const char *contents, size_t len)
 {
+	int ret;
+
 	if (!file || !file->file || !contents)
 		return -EINVAL;
+
+	ret = ftruncate(fileno(file->file), 0);
+	if (ret)
+		return -errno;
 
 	fseek(file->file, 0, SEEK_SET);
 	if (fwrite(contents, 1, len, file->file) != len)
