@@ -2,7 +2,10 @@
 #ifndef WGM__WG_WGM_H
 #define WGM__WG_WGM_H
 
+#include "wgm_helpers.h"
+
 #include <stdbool.h>
+#include <stdint.h>
 
 struct wgm_ctx {
 	char	*data_dir;

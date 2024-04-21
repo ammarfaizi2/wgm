@@ -71,8 +71,9 @@ int main(int argc, char *argv[])
 		if (!ret)
 			ret = wgm_ctx_run(argc, argv, &ctx);
 		wgm_ctx_free(&ctx);
+	} else {
+		show_usage(argv[0]);
 	}
 
-	show_usage(argv[0]);
 	return abs(ret);
 }

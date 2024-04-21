@@ -4,7 +4,37 @@
 
 #include "wgm.h"
 
+struct wgm_peer {
+	char			public_key[128];
+	struct wgm_array_str	ips;
+};
+
+struct wgm_array_peer {
+	struct wgm_peer	*arr;
+	size_t		len;
+};
+
 void wgm_cmd_peer_show_usage(const char *app, int show_cmds);
 int wgm_cmd_peer(int argc, char *argv[], struct wgm_ctx *ctx);
+
+int wgm_peer_to_json(const struct wgm_peer *peer, json_object **ret);
+int wgm_peer_from_json(struct wgm_peer *peer, const json_object *obj);
+
+int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src);
+void wgm_peer_move(struct wgm_peer *dst, struct wgm_peer *src);
+void wgm_peer_free(struct wgm_peer *peer);
+
+int wgm_array_peer_add(struct wgm_array_peer *arr, const struct wgm_peer *peer);
+int wgm_array_peer_del(struct wgm_array_peer *arr, size_t idx);
+int wgm_array_peer_find(struct wgm_array_peer *arr, const char *pub_key, size_t *idx);
+int wgm_array_peer_add_unique(struct wgm_array_peer *arr, const struct wgm_peer *peer);
+int wgm_array_peer_add_mv(struct wgm_array_peer *arr, struct wgm_peer *peer);
+int wgm_array_peer_add_mv_unique(struct wgm_array_peer *arr, struct wgm_peer *peer);
+int wgm_array_peer_copy(struct wgm_array_peer *dst, const struct wgm_array_peer *src);
+void wgm_array_peer_move(struct wgm_array_peer *dst, struct wgm_array_peer *src);
+void wgm_array_peer_free(struct wgm_array_peer *peer_array);
+
+int wgm_array_peer_to_json(const struct wgm_array_peer *arr, json_object **obj);
+int wgm_array_peer_from_json(struct wgm_array_peer *arr, const json_object *obj);
 
 #endif /* #ifndef WGM__WG_CMD_PEER_H */
