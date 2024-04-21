@@ -52,7 +52,7 @@ int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src)
 
 	tmp = *src;
 
-	if (wgm_array_str_copy(&tmp.ips, &src->ips))
+	if (wgm_array_str_copy(&tmp.addresses, &src->addresses))
 		return -ENOMEM;
 
 	*dst = tmp;
@@ -62,13 +62,13 @@ int wgm_peer_copy(struct wgm_peer *dst, const struct wgm_peer *src)
 void wgm_peer_move(struct wgm_peer *dst, struct wgm_peer *src)
 {
 	*dst = *src;
-	wgm_array_str_move(&dst->ips, &src->ips);
+	wgm_array_str_move(&dst->addresses, &src->addresses);
 	wgm_peer_free(src);
 }
 
 void wgm_peer_free(struct wgm_peer *peer)
 {
-	wgm_array_str_free(&peer->ips);
+	wgm_array_str_free(&peer->addresses);
 	memset(peer, 0, sizeof(*peer));
 }
 
