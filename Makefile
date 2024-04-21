@@ -11,8 +11,13 @@ else
 	LDFLAGS += -static
 endif
 
-HEADER_FILES = src/wgm_iface.h src/wgm_peer.h src/wgm.h src/helpers.h src/wgm_conf.h src/md5.h
-SOURCE_FILES = src/wgm_iface.c src/wgm_peer.c src/wgm.c src/helpers.c src/wgm_conf.c src/md5.c
+SOURCE_FILES = \
+	src/wgm.c \
+	src/wgm_helpers.c \
+	src/wgm_cmd_iface.c \
+	src/wgm_cmd_peer.c
+
+HEADER_FILES = $(SOURCE_FILES:.c=.h)
 OBJECT_FILES = $(SOURCE_FILES:.c=.o)
 
 all: wgm
