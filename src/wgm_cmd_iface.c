@@ -58,10 +58,10 @@ void wgm_cmd_iface_show_usage(const char *app, int show_cmds)
 	if (show_cmds) {
 		printf("\nCommands:\n");
 		printf("  list                             List all interfaces\n");
-		printf("  show <ifname>                    Show interface details\n");
+		printf("  show <options>                   Show interface details\n");
 		printf("  add <options>                    Add a new interface\n");
 		printf("  update <options>                 Update an interface\n");
-		printf("  del <ifname>                     Delete an interface\n");
+		printf("  del <options>                    Delete an interface\n");
 		printf("  up <ifname>                      Start an interface\n");
 		printf("  down <ifname>                    Stop an interface\n");
 	}
@@ -489,16 +489,32 @@ out:
 
 int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_new)
 {
-	char *path;
+	wgm_file_t glock_file;
+	char *path, *lpath;
 	int ret;
 
 	ret = wgm_iface_gen_path(&path, hdl->ctx, dev, "iface.json");
 	if (ret)
 		return ret;
 
+	ret = wgm_iface_gen_path(&lpath, hdl->ctx, "", "lock");
+	if (ret) {
+		free(path);
+		return ret;
+	}
+
+	ret = wgm_file_open_lock(&glock_file, lpath, "ab+", LOCK_EX);
+	free(lpath);
+	if (ret) {
+		free(path);
+		return ret;
+	}
+
 	ret = wgm_file_open_lock(&hdl->file, path, "rb+", LOCK_EX);
 	if (ret == -ENOENT && create_new)
 		ret = wgm_file_open_lock(&hdl->file, path, "wb+", LOCK_EX);
+
+	wgm_file_close(&glock_file);
 
 	if (!ret)
 		fseek(hdl->file.file, 0, SEEK_SET);
