@@ -37,6 +37,7 @@ static int wgm_ctx_init(struct wgm_ctx *ctx)
 {
 	int ret = 0;
 
+	memset(&ctx, 0, sizeof(ctx));
 	ctx->data_dir = dup_getenv("WGM_DATA_DIR", "./wgm_data");
 	ctx->wg_quick_path = dup_getenv("WGM_WG_QUICK_PATH", "/usr/bin/wg-quick");
 	ctx->wg_conf_path = dup_getenv("WGM_WG_CONF_PATH", "/etc/wireguard");
@@ -74,7 +75,6 @@ int main(int argc, char *argv[])
 	if (argc >= 2) {
 		struct wgm_ctx ctx;
 
-		memset(&ctx, 0, sizeof(ctx));
 		ret = wgm_ctx_init(&ctx);
 		if (!ret)
 			ret = wgm_ctx_run(argc, argv, &ctx);
