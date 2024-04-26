@@ -43,6 +43,30 @@ out_err:
 
 int wgm_peer_from_json(struct wgm_peer *peer, const json_object *obj)
 {
+	json_object *tmp;
+	const char *str;
+	int err = 0;
+
+	if (!json_object_object_get_ex(obj, "public_key", &tmp))
+		return -EINVAL;
+
+	str = json_object_get_string(tmp);
+	if (!str)
+		return -EINVAL;
+
+
+	if (strlen(str) >= sizeof(peer->public_key))
+		return -EINVAL;
+
+	strcpy(peer->public_key, str);
+
+	if (!json_object_object_get_ex(obj, "addresses", &tmp))
+		return -EINVAL;
+
+	err = wgm_array_str_from_json(&peer->addresses, tmp);
+	if (err)
+		return err;
+
 	return 0;
 }
 
