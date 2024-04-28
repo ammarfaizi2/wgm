@@ -32,10 +32,10 @@ static const struct wgm_opt options[] = {
 	#define IFACE_OPT_MTU		(1ull << 4ull)
 	{ IFACE_OPT_MTU,		"mtu",		required_argument,	NULL,	'm' },
 
-	#define IFACE_OPT_FORCE		(1ull << 5ull)
+	#define IFACE_OPT_FORCE		(1ull << 62ull)
 	{ IFACE_OPT_FORCE,		"force",	no_argument,		NULL,	'f' },
 
-	#define IFACE_OPT_UP		(1ull << 6ull)
+	#define IFACE_OPT_UP		(1ull << 63ull)
 	{ IFACE_OPT_UP,			"up",		no_argument,		NULL,	'u' },
 
 	{ 0, NULL, 0, NULL, 0 }
@@ -158,7 +158,7 @@ static int parse_args(int argc, char *argv[], struct wgm_iface_arg *arg,
 			wgm_array_str_free(&arg->addrs);
 			ret = wgm_array_str_from_csv(&arg->addrs, optarg);
 			if (ret)
-				return ret;
+				goto out;
 
 			out_args |= IFACE_OPT_ADDRS;
 			break;

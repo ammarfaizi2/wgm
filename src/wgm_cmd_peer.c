@@ -4,12 +4,164 @@
 
 #include "wgm_cmd_peer.h"
 
+static const struct wgm_opt options[] = {
+	#define PEER_OPT_DEV			(1ull << 0ull)
+	{ PEER_OPT_DEV,			"dev",		required_argument,	NULL,	'd' },
+
+	#define PEER_OPT_PRIVATE_KEY		(1ull << 1ull)
+	{ PEER_OPT_PRIVATE_KEY,		"private-key",	required_argument,	NULL,	'k' },
+
+	#define PEER_OPT_ADDRS			(1ull << 2ull)
+	{ PEER_OPT_ADDRS,		"addresses",	required_argument,	NULL,	'A' },
+
+	#define PEER_OPT_BIND_DEV		(1ull << 3ull)
+	{ PEER_OPT_BIND_DEV,		"bind-dev",	required_argument,	NULL,	'b' },
+
+	#define PEER_OPT_BIND_IP		(1ull << 4ull)
+	{ PEER_OPT_BIND_IP,		"bind-ip",	required_argument,	NULL,	'B' },
+
+	#define PEER_OPT_BIND_GATEWAY		(1ull << 5ull)
+	{ PEER_OPT_BIND_GATEWAY,	"bind-gateway",	required_argument,	NULL,	'g' },
+
+	#define PEER_OPT_FORCE			(1ull << 62ull)
+	{ PEER_OPT_FORCE,		"force",	no_argument,		NULL,	'f' },
+
+	#define PEER_OPT_UP			(1ull << 63ull)
+	{ PEER_OPT_UP,			"up",		no_argument,		NULL,	'u' },
+
+	{ 0, NULL, 0, NULL, 0 }
+};
+
+struct wgm_peer_arg {
+	const char		*dev;
+	const char		*private_key;
+	struct wgm_array_str	addrs;
+	const char		*bind_dev;
+	const char		*bind_ip;
+	const char		*bind_gateway;
+	bool			force;
+	bool			up;
+};
+
 void wgm_cmd_peer_show_usage(const char *app, int show_cmds)
 {
+	printf("Usage: %s peer [add|update|del|show|list] <arguments>\n", app);
+	if (show_cmds) {
+		printf("\nCommands:\n");
+		printf("  add    <options>      Add a new peer\n");
+		printf("  update <options>      Update an existing peer\n");
+		printf("  del    <options>      Delete a peer\n");
+		printf("  show   <options>      Show a peer\n");
+		printf("  list   <options>      List all peers\n");
+		printf("\n  --dev option is mandatory for all commands\n");
+	}
+
+	printf("\nOptions:\n");
+	printf("  -d, --dev <dev>              Interface name\n");
+	printf("  -k, --private-key <key>      Private key\n");
+	printf("  -A, --addresses <addr>       Peer addresses\n");
+	printf("  -b, --bind-dev <dev>         Bind device\n");
+	printf("  -B, --bind-ip <ip>           Bind IP address\n");
+	printf("  -g, --bind-gateway <ip>      Bind gateway\n");
+	printf("  -f, --force                  Force operation\n");
+	printf("  -u, --up                     Bring up the peer\n");
+	printf("\n");
+}
+
+static int parse_args(int argc, char *argv[], struct wgm_peer_arg *arg,
+		      uint64_t *out_args_p)
+{
+	struct option *long_opt;
+	uint64_t out_args = 0;
+	char *short_opt;
+	int ret;
+
+	ret = wgm_create_getopt_long_args(&long_opt, &short_opt, options, ARRAY_SIZE(options));
+	if (ret)
+		return ret;
+
+	memset(arg, 0, sizeof(*arg));
+	while (1) {
+		int c = getopt_long(argc, argv, short_opt, long_opt, NULL);
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'd':
+			arg->dev = optarg;
+			out_args |= PEER_OPT_DEV;
+			break;
+
+		case 'k':
+			arg->private_key = optarg;
+			out_args |= PEER_OPT_PRIVATE_KEY;
+			break;
+
+		case 'A':
+			wgm_array_str_free(&arg->addrs);
+			ret = wgm_array_str_from_csv(&arg->addrs, optarg);
+			if (ret)
+				goto out;
+
+			out_args |= PEER_OPT_ADDRS;
+			break;
+
+		case 'b':
+			arg->bind_dev = optarg;
+			out_args |= PEER_OPT_BIND_DEV;
+			break;
+
+		case 'B':
+			arg->bind_ip = optarg;
+			out_args |= PEER_OPT_BIND_IP;
+			break;
+
+		case 'g':
+			arg->bind_gateway = optarg;
+			out_args |= PEER_OPT_BIND_GATEWAY;
+			break;
+
+		case 'f':
+			arg->force = true;
+			out_args |= PEER_OPT_FORCE;
+			break;
+
+		case 'u':
+			arg->up = true;
+			out_args |= PEER_OPT_UP;
+			break;
+
+		default:
+			wgm_cmd_peer_show_usage(argv[0], 0);
+			ret = -EINVAL;
+			goto out;
+		}
+	}
+
+out:
+	wgm_free_getopt_long_args(long_opt, short_opt);
+	*out_args_p = out_args;
+	return ret;
 }
 
 int wgm_cmd_peer(int argc, char *argv[], struct wgm_ctx *ctx)
 {
+	struct wgm_peer_arg arg;
+	const char *cmd, *app;
+	uint64_t out_args = 0;
+	int ret;
+
+	if (argc < 3) {
+		wgm_cmd_peer_show_usage(argv[0], 1);
+		return -EINVAL;
+	}
+
+	app = argv[0];
+	cmd = argv[2];
+	ret = parse_args(argc, argv, &arg, &out_args);
+	if (ret)
+		return ret;
+
 	return 0;
 }
 
