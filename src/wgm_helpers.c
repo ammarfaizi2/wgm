@@ -594,11 +594,15 @@ int wgm_global_lock_open(wgm_global_lock_t *lock, struct wgm_ctx *ctx, const cha
 	char *lock_path;
 	int ret;
 
+	ret = wgm_mkdir_recursive(ctx->data_dir, 0700);
+	if (ret)
+		return ret;
+
 	ret = wgm_asprintf(&lock_path, "%s/%s", ctx->data_dir, path);
 	if (ret)
 		return ret;
 
-	ret = wgm_file_open_lock(&lock->file, lock_path, "w", LOCK_EX);
+	ret = wgm_file_open_lock(&lock->file, lock_path, "ab+", LOCK_EX);
 	free(lock_path);
 	return ret;
 }
