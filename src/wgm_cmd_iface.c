@@ -189,9 +189,57 @@ static int wgm_cmd_iface_list(const char *app, struct wgm_ctx *ctx,
 }
 
 static int wgm_cmd_iface_show(const char *app, struct wgm_ctx *ctx,
-			      struct wgm_iface_arg *arg, uint64_t arg_bits)
+			      struct wgm_iface_arg *arg, uint64_t arg_bits,
+			      const char *first_arg)
 {
-	return 0;
+	const char *dev = first_arg;
+	struct wgm_iface_hdl hdl;
+	struct wgm_iface iface;
+	const char *ifjson;
+	json_object *ifobj;
+	int ret;
+
+	if (arg_bits) {
+		wgm_err_elog_add("Error: The show command does not take any options.\n");
+		wgm_err_elog_add("Use 'show <ifname>' to show an interface details.\n");
+		wgm_cmd_iface_show_usage(app, 1);
+		return -EINVAL;
+	}
+
+	hdl.ctx = ctx;
+	ret = wgm_iface_hdl_open(&hdl, dev, false);
+	if (ret) {
+		wgm_err_elog_add("Failed to open interface file: %s: %s\n", dev, strerror(-ret));
+		return ret;
+	}
+
+	memset(&iface, 0, sizeof(iface));
+	ret = wgm_iface_hdl_load(&hdl, &iface);
+	if (ret) {
+		wgm_err_elog_add("Failed to load interface file: %s: %s\n", dev, strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_iface_to_json(&iface, &ifobj);
+	if (ret) {
+		wgm_err_elog_add("Failed to convert interface to JSON: %s\n", strerror(-ret));
+		goto out;
+	}
+
+	ifjson = json_object_to_json_string_ext(ifobj, WGM_JSON_FLAGS);
+	if (!ifjson) {
+		json_object_put(ifobj);
+		wgm_err_elog_add("Failed to convert JSON object to string\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+	puts(ifjson);
+	json_object_put(ifobj);
+
+out:
+	wgm_iface_hdl_close(&hdl);
+	wgm_iface_free(&iface);
+	return ret;
 }
 
 static void wg_apply_def_to_iface(struct wgm_iface *iface)
@@ -331,13 +379,14 @@ out:
 }
 
 static int wgm_cmd_iface_run(const char *app, struct wgm_ctx *ctx, const char *cmd,
-			     struct wgm_iface_arg *arg, uint64_t arg_bits)
+			     struct wgm_iface_arg *arg, uint64_t arg_bits,
+			     const char *first_arg)
 {
 	if (!strcmp(cmd, "list"))
 		return wgm_cmd_iface_list(app, ctx, arg, arg_bits);
 
 	if (!strcmp(cmd, "show"))
-		return wgm_cmd_iface_show(app, ctx, arg, arg_bits);
+		return wgm_cmd_iface_show(app, ctx, arg, arg_bits, first_arg);
 
 	if (!strcmp(cmd, "add"))
 		return wg_cmd_iface_add(app, ctx, arg, arg_bits);
@@ -353,8 +402,8 @@ static int wgm_cmd_iface_run(const char *app, struct wgm_ctx *ctx, const char *c
 
 int wgm_cmd_iface(int argc, char *argv[], struct wgm_ctx *ctx)
 {
+	const char *cmd, *app, *first_arg;
 	struct wgm_iface_arg arg;
-	const char *cmd, *app;
 	uint64_t out_args = 0;
 	int ret;
 
@@ -365,11 +414,12 @@ int wgm_cmd_iface(int argc, char *argv[], struct wgm_ctx *ctx)
 
 	app = argv[0];
 	cmd = argv[2];
+	first_arg = argv[3];
 	ret = parse_args(argc, argv, &arg, &out_args);
 	if (ret)
 		return ret;
 
-	ret = wgm_cmd_iface_run(app, ctx, cmd, &arg, out_args);
+	ret = wgm_cmd_iface_run(app, ctx, cmd, &arg, out_args, first_arg);
 	wgm_iface_arg_free(&arg);
 	return ret;
 }
@@ -469,7 +519,7 @@ void wgm_iface_free(struct wgm_iface *iface)
 	memset(iface, 0, sizeof(*iface));
 }
 
-static int wgm_iface_path_fmt(char **path, struct wgm_ctx *ctx,
+static int wgm_iface_path_fmt(bool create_dir, char **path, struct wgm_ctx *ctx,
 			      const char *dev, const char *fmt, ...)
 {
 	va_list ap1, ap2;
@@ -489,9 +539,11 @@ static int wgm_iface_path_fmt(char **path, struct wgm_ctx *ctx,
 		return -ENOMEM;
 
 	off = (size_t)snprintf(rpath, len + 1, "%s/%s/", ctx->data_dir, dev);
-	ret = wgm_mkdir_recursive(rpath, 0700);
-	if (ret)
-		goto out;
+	if (create_dir) {
+		ret = wgm_mkdir_recursive(rpath, 0700);
+		if (ret)
+			goto out;
+	}
 
 	vsnprintf(rpath + off, len - off + 1, fmt, ap2);
 	ret = 0;
@@ -511,7 +563,7 @@ int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_n
 	char *path;
 	int ret;
 
-	ret = wgm_iface_path_fmt(&path, hdl->ctx, dev, "iface.json");
+	ret = wgm_iface_path_fmt(create_new, &path, hdl->ctx, dev, "iface.json");
 	if (ret)
 		return ret;
 
