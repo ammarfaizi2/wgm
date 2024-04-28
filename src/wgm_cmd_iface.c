@@ -451,8 +451,8 @@ void wgm_iface_free(struct wgm_iface *iface)
 	memset(iface, 0, sizeof(*iface));
 }
 
-static int wgm_iface_gen_path(char **path, struct wgm_ctx *ctx,
-				const char *dev, const char *fmt, ...)
+static int wgm_iface_path_fmt(char **path, struct wgm_ctx *ctx,
+			      const char *dev, const char *fmt, ...)
 {
 	va_list ap1, ap2;
 	char *rpath;
@@ -489,22 +489,15 @@ out:
 
 int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_new)
 {
-	wgm_file_t glock_file;
-	char *path, *lpath;
+	wgm_global_lock_t lock;
+	char *path;
 	int ret;
 
-	ret = wgm_iface_gen_path(&path, hdl->ctx, dev, "iface.json");
+	ret = wgm_iface_path_fmt(&path, hdl->ctx, dev, "iface.json");
 	if (ret)
 		return ret;
 
-	ret = wgm_iface_gen_path(&lpath, hdl->ctx, "", "lock");
-	if (ret) {
-		free(path);
-		return ret;
-	}
-
-	ret = wgm_file_open_lock(&glock_file, lpath, "ab+", LOCK_EX);
-	free(lpath);
+	ret = wgm_global_lock_open(&lock, hdl->ctx, "iface.lock");
 	if (ret) {
 		free(path);
 		return ret;
@@ -514,8 +507,7 @@ int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_n
 	if (ret == -ENOENT && create_new)
 		ret = wgm_file_open_lock(&hdl->file, path, "wb+", LOCK_EX);
 
-	wgm_file_close(&glock_file);
-
+	wgm_global_lock_close(&lock);
 	if (!ret)
 		fseek(hdl->file.file, 0, SEEK_SET);
 

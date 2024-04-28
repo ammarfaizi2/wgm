@@ -30,6 +30,10 @@ typedef struct wgm_file {
 	FILE	*file;
 } wgm_file_t;
 
+typedef struct wgm_global_lock {
+	wgm_file_t	file;
+} wgm_global_lock_t;
+
 #define WGM_JSON_FLAGS (JSON_C_TO_STRING_NOSLASHESCAPE | JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY)
 
 int wgm_array_str_add(struct wgm_array_str *arr, const char *str);
@@ -65,5 +69,10 @@ int wgm_mkdir_recursive(const char *path, mode_t mode);
 int wgm_err_log(const char *fmt, ...);
 int wgm_err_elog_add(const char *fmt, ...);
 void wgm_err_elog_flush(void);
+
+struct wgm_ctx;
+
+int wgm_global_lock_open(wgm_global_lock_t *lock, struct wgm_ctx *ctx, const char *path);
+int wgm_global_lock_close(wgm_global_lock_t *lock);
 
 #endif /* #ifndef WGM__WG_HELPERS_H */

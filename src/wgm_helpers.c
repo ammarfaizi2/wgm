@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "wgm_helpers.h"
+#include "wgm.h"
 
 int wgm_array_str_add(struct wgm_array_str *arr, const char *str)
 {
@@ -586,4 +587,23 @@ void wgm_err_elog_flush(void)
 		fprintf(stderr, "  %s\n", err_elog.arr[i]);
 	fprintf(stderr, "---------------------------------------------------\n");
 	wgm_array_str_free(&err_elog);
+}
+
+int wgm_global_lock_open(wgm_global_lock_t *lock, struct wgm_ctx *ctx, const char *path)
+{
+	char *lock_path;
+	int ret;
+
+	ret = wgm_asprintf(&lock_path, "%s/%s", ctx->data_dir, path);
+	if (ret)
+		return ret;
+
+	ret = wgm_file_open_lock(&lock->file, lock_path, "w", LOCK_EX);
+	free(lock_path);
+	return ret;
+}
+
+int wgm_global_lock_close(wgm_global_lock_t *lock)
+{
+	return wgm_file_close(&lock->file);
 }
