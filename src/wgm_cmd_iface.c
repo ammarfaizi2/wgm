@@ -54,19 +54,19 @@ static void wgm_iface_arg_free(struct wgm_iface_arg *arg)
 
 void wgm_cmd_iface_show_usage(const char *app, int show_cmds)
 {
-	printf("Usage: %s iface [list|show|add|del|update|up|down] <options>\n", app);
+	printf("Usage: %s iface [list|show|add|del|update|up|down] <arguments>\n", app);
 	if (show_cmds) {
-		printf("\nCommands:\n");
-		printf("  list                             List all interfaces\n");
-		printf("  show <options>                   Show interface details\n");
-		printf("  add <options>                    Add a new interface\n");
-		printf("  update <options>                 Update an interface\n");
-		printf("  del <options>                    Delete an interface\n");
-		printf("  up <ifname>                      Start an interface\n");
-		printf("  down <ifname>                    Stop an interface\n");
+		printf("\nCommands:\n\n");
+		printf("  add    <options>           Add a new interface\n");
+		printf("  update <options>           Update an interface\n");
+		printf("  show   <ifname>            Show an interface\n");
+		printf("  del    <ifname>            Delete an interface\n");
+		printf("  list                       List all interfaces\n");
+		printf("  up     <ifname>            Start an interface\n");
+		printf("  down   <ifname>            Stop an interface\n");
 	}
 
-	printf("\nOptions:\n");
+	printf("\nOptions (for 'add' and 'update' only):\n\n");
 	printf("  -d, --dev <ifname>               Set the interface name\n");
 	printf("  -k, --private-key <key>          Set the private key\n");
 	printf("  -p, --listen-port <port>         Set the listen port (default: %hu)\n", WGM_IFACE_DEF_PORT);
