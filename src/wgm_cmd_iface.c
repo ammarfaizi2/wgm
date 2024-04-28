@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <unistd.h>
 
 #include "wgm_cmd_iface.h"
 
@@ -50,6 +51,44 @@ static void wgm_iface_arg_free(struct wgm_iface_arg *arg)
 {
 	wgm_array_str_free(&arg->addrs);
 	memset(arg, 0, sizeof(*arg));
+}
+
+static int wgm_iface_path_fmt(bool create_dir, char **path, struct wgm_ctx *ctx,
+			      const char *dev, const char *fmt, ...)
+{
+	va_list ap1, ap2;
+	char *rpath;
+	size_t len;
+	size_t off;
+	int ret;
+
+	va_start(ap1, fmt);
+	va_copy(ap2, ap1);
+	len = (size_t)vsnprintf(NULL, 0, fmt, ap1);
+	va_end(ap1);
+
+	len += (size_t)snprintf(NULL, 0, "%s/%s/", ctx->data_dir, dev);
+	rpath = malloc(len + 1);
+	if (!rpath)
+		return -ENOMEM;
+
+	off = (size_t)snprintf(rpath, len + 1, "%s/%s/", ctx->data_dir, dev);
+	if (create_dir) {
+		ret = wgm_mkdir_recursive(rpath, 0700);
+		if (ret)
+			goto out;
+	}
+
+	vsnprintf(rpath + off, len - off + 1, fmt, ap2);
+	ret = 0;
+
+out:
+	if (ret)
+		free(rpath);
+	else
+		*path = rpath;
+
+	return ret;
 }
 
 void wgm_cmd_iface_show_usage(const char *app, int show_cmds)
@@ -242,6 +281,75 @@ out:
 	return ret;
 }
 
+static int wg_cmd_iface_del(const char *app, struct wgm_ctx *ctx,
+			    struct wgm_iface_arg *arg, uint64_t arg_bits,
+			    const char *first_arg)
+{
+	const char *dev = first_arg;
+	struct wgm_iface_hdl hdl;
+	struct wgm_iface iface;
+	char *file_path;
+	int ret;
+
+	if (arg_bits) {
+		wgm_err_elog_add("Error: The del command does not take any options.\n");
+		wgm_err_elog_add("Use 'del <ifname>' to delete an interface.\n");
+		wgm_cmd_iface_show_usage(app, 1);
+		return -EINVAL;
+	}
+
+	hdl.ctx = ctx;
+	ret = wgm_iface_hdl_open(&hdl, dev, false);
+	if (ret) {
+		wgm_err_elog_add("Failed to open interface file: %s: %s\n", dev, strerror(-ret));
+		return ret;
+	}
+
+	memset(&iface, 0, sizeof(iface));
+	ret = wgm_iface_hdl_load(&hdl, &iface);
+	if (ret) {
+		wgm_err_elog_add("Failed to load interface file: %s: %s\n", dev, strerror(-ret));
+		goto out;
+	}
+
+	ret = wgm_iface_path_fmt(false, &file_path, ctx, dev, "iface.json");
+	if (ret) {
+		wgm_err_elog_add("Failed to format interface file path: %s\n", strerror(-ret));
+		goto out;
+	}
+
+	ret = remove(file_path);
+	if (ret) {
+		ret = -errno;
+		wgm_err_elog_add("Failed to remove interface file: %s: %s\n", file_path, strerror(-ret));
+		free(file_path);
+		goto out;
+	}
+
+	free(file_path);
+
+	ret = wgm_iface_path_fmt(false, &file_path, ctx, dev, "");
+	if (ret) {
+		wgm_err_elog_add("Failed to format interface directory path: %s\n", strerror(-ret));
+		goto out;
+	}
+
+	ret = rmdir(file_path);
+	if (ret) {
+		ret = -errno;
+		wgm_err_elog_add("Failed to remove interface directory: %s: %s\n", file_path, strerror(-ret));
+		free(file_path);
+		goto out;
+	}
+
+	free(file_path);
+
+out:
+	wgm_iface_hdl_close(&hdl);
+	wgm_iface_free(&iface);
+	return ret;
+}
+
 static void wg_apply_def_to_iface(struct wgm_iface *iface)
 {
 	memset(iface, 0, sizeof(*iface));
@@ -326,12 +434,6 @@ out:
 	return ret;
 }
 
-static int wg_cmd_iface_del(const char *app, struct wgm_ctx *ctx,
-			    struct wgm_iface_arg *arg, uint64_t arg_bits)
-{
-	return 0;
-}
-
 static int wg_cmd_iface_update(const char *app, struct wgm_ctx *ctx,
 			       struct wgm_iface_arg *arg, uint64_t arg_bits)
 {
@@ -392,7 +494,7 @@ static int wgm_cmd_iface_run(const char *app, struct wgm_ctx *ctx, const char *c
 		return wg_cmd_iface_add(app, ctx, arg, arg_bits);
 
 	if (!strcmp(cmd, "del"))
-		return wg_cmd_iface_del(app, ctx, arg, arg_bits);
+		return wg_cmd_iface_del(app, ctx, arg, arg_bits, first_arg);
 
 	if (!strcmp(cmd, "update"))
 		return wg_cmd_iface_update(app, ctx, arg, arg_bits);
@@ -517,44 +619,6 @@ void wgm_iface_free(struct wgm_iface *iface)
 	wgm_array_str_free(&iface->addresses);
 	wgm_array_peer_free(&iface->peers);
 	memset(iface, 0, sizeof(*iface));
-}
-
-static int wgm_iface_path_fmt(bool create_dir, char **path, struct wgm_ctx *ctx,
-			      const char *dev, const char *fmt, ...)
-{
-	va_list ap1, ap2;
-	char *rpath;
-	size_t len;
-	size_t off;
-	int ret;
-
-	va_start(ap1, fmt);
-	va_copy(ap2, ap1);
-	len = (size_t)vsnprintf(NULL, 0, fmt, ap1);
-	va_end(ap1);
-
-	len += (size_t)snprintf(NULL, 0, "%s/%s/", ctx->data_dir, dev);
-	rpath = malloc(len + 1);
-	if (!rpath)
-		return -ENOMEM;
-
-	off = (size_t)snprintf(rpath, len + 1, "%s/%s/", ctx->data_dir, dev);
-	if (create_dir) {
-		ret = wgm_mkdir_recursive(rpath, 0700);
-		if (ret)
-			goto out;
-	}
-
-	vsnprintf(rpath + off, len - off + 1, fmt, ap2);
-	ret = 0;
-
-out:
-	if (ret)
-		free(rpath);
-	else
-		*path = rpath;
-
-	return ret;
 }
 
 int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_new)
