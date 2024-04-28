@@ -35,9 +35,9 @@ static void wgm_ctx_free(struct wgm_ctx *ctx)
 
 static int wgm_ctx_init(struct wgm_ctx *ctx)
 {
-	int ret = 0;
+	int ret;
 
-	memset(&ctx, 0, sizeof(ctx));
+	memset(ctx, 0, sizeof(*ctx));
 	ctx->data_dir = dup_getenv("WGM_DATA_DIR", "./wgm_data");
 	ctx->wg_quick_path = dup_getenv("WGM_WG_QUICK_PATH", "/usr/bin/wg-quick");
 	ctx->wg_conf_path = dup_getenv("WGM_WG_CONF_PATH", "/etc/wireguard");

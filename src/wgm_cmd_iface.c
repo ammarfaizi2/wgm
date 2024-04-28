@@ -358,7 +358,7 @@ int wgm_cmd_iface(int argc, char *argv[], struct wgm_ctx *ctx)
 	uint64_t out_args = 0;
 	int ret;
 
-	if (argc < 2) {
+	if (argc < 3) {
 		wgm_cmd_iface_show_usage(argv[0], 1);
 		return -EINVAL;
 	}
