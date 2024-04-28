@@ -589,10 +589,3 @@ int wgm_iface_hdl_store(struct wgm_iface_hdl *hdl, struct wgm_iface *iface)
 	json_object_put(obj);
 	return ret;
 }
-
-char *strncpyl(char *dest, const char *src, size_t n)
-{
-	strncpy(dest, src, n - 1);
-	dest[n - 1] = '\0';
-	return dest;
-}
