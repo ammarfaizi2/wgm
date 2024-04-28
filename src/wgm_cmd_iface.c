@@ -395,16 +395,20 @@ int wgm_iface_to_json(const struct wgm_iface *iface, json_object **obj)
 		goto out_err;
 
 	err = json_object_object_add(ret, "addresses", tmp);
-	if (err)
+	if (err) {
+		json_object_put(tmp);
 		goto out_err;
+	}
 
 	err = wgm_array_peer_to_json(&iface->peers, &tmp);
 	if (err)
 		goto out_err;
 
 	err = json_object_object_add(ret, "peers", tmp);
-	if (err)
+	if (err) {
+		json_object_put(tmp);
 		goto out_err;
+	}
 
 	*obj = ret;
 	return 0;
