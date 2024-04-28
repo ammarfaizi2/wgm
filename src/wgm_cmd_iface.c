@@ -205,10 +205,10 @@ static int wg_apply_arg_to_iface(struct wgm_iface *iface, struct wgm_iface_arg *
 				 uint64_t arg_bits)
 {
 	if (arg_bits & IFACE_OPT_DEV)
-		strncpy(iface->ifname, arg->dev, sizeof(iface->ifname));
+		strncpyl(iface->ifname, arg->dev, sizeof(iface->ifname));
 
 	if (arg_bits & IFACE_OPT_PRIVATE_KEY)
-		strncpy(iface->private_key, arg->private_key, sizeof(iface->private_key));
+		strncpyl(iface->private_key, arg->private_key, sizeof(iface->private_key));
 
 	if (arg_bits & IFACE_OPT_LISTEN_PORT)
 		iface->listen_port = arg->listen_port;
