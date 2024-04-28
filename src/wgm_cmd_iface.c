@@ -5,7 +5,11 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
+
+#include <fcntl.h>
+#include <dirent.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "wgm_cmd_iface.h"
 
@@ -224,7 +228,93 @@ static bool validate_args(const char *app, struct wgm_iface_arg *arg,
 static int wgm_cmd_iface_list(const char *app, struct wgm_ctx *ctx,
 			      struct wgm_iface_arg *arg, uint64_t arg_bits)
 {
-	return 0;
+	struct wgm_array_iface ifarr;
+	struct wgm_iface_hdl hdl;
+	wgm_global_lock_t glock;
+	json_object *ifarr_json;
+	const char *ifarr_jstr;
+	int err = 0;
+	DIR *dir;
+
+	if (arg_bits) {
+		wgm_err_elog_add("Error: The list command does not take any options.\n");
+		wgm_cmd_iface_show_usage(app, 1);
+		return -EINVAL;
+	}
+
+	dir = opendir(ctx->data_dir);
+	if (!dir) {
+		err = -errno;
+		wgm_err_elog_add("Failed to open data directory: %s: %s\n", ctx->data_dir, strerror(-err));
+		return err;
+	}
+
+	err = wgm_global_lock_open(&glock, ctx, "iface.lock");
+	if (err) {
+		closedir(dir);
+		return err;
+	}
+
+	memset(&ifarr, 0, sizeof(ifarr));
+	while (1) {
+		struct wgm_iface iface;
+		struct dirent *ent;
+
+		ent = readdir(dir);
+		if (!ent)
+			break;
+
+		if (ent->d_name[0] == '.')
+			continue;
+
+		if (ent->d_type != DT_DIR)
+			continue;
+
+		hdl.ctx = ctx;
+		err = __wgm_iface_hdl_open(&hdl, ent->d_name, false);
+		if (err)
+			continue;
+
+		memset(&iface, 0, sizeof(iface));
+		err = wgm_iface_hdl_load(&hdl, &iface);
+		wgm_iface_hdl_close(&hdl);
+		if (err) {
+			wgm_iface_hdl_close(&hdl);
+			continue;
+		}
+
+		err = wgm_array_iface_add_mv(&ifarr, &iface);
+		if (err) {
+			wgm_iface_free(&iface);
+			continue;
+		}
+	}
+
+	if (err)
+		goto out;
+
+	err = wgm_array_iface_to_json(&ifarr, &ifarr_json);
+	if (err) {
+		wgm_err_elog_add("Failed to convert interface array to JSON: %s\n", strerror(-err));
+		goto out;
+	}
+
+	ifarr_jstr = json_object_to_json_string_ext(ifarr_json, WGM_JSON_FLAGS);
+	if (!ifarr_jstr) {
+		json_object_put(ifarr_json);
+		wgm_err_elog_add("Failed to convert JSON object to string\n");
+		err = -ENOMEM;
+		goto out;
+	}
+
+	puts(ifarr_jstr);
+	json_object_put(ifarr_json);
+
+out:
+	wgm_array_iface_free(&ifarr);
+	wgm_global_lock_close(&glock);
+	closedir(dir);
+	return err;
 }
 
 static int wgm_cmd_iface_show(const char *app, struct wgm_ctx *ctx,
@@ -621,9 +711,8 @@ void wgm_iface_free(struct wgm_iface *iface)
 	memset(iface, 0, sizeof(*iface));
 }
 
-int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_new)
+int __wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_new)
 {
-	wgm_global_lock_t lock;
 	char *path;
 	int ret;
 
@@ -631,21 +720,28 @@ int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_n
 	if (ret)
 		return ret;
 
-	ret = wgm_global_lock_open(&lock, hdl->ctx, "iface.lock");
-	if (ret) {
-		free(path);
-		return ret;
-	}
-
 	ret = wgm_file_open_lock(&hdl->file, path, "rb+", LOCK_EX);
 	if (ret == -ENOENT && create_new)
 		ret = wgm_file_open_lock(&hdl->file, path, "wb+", LOCK_EX);
 
-	wgm_global_lock_close(&lock);
 	if (!ret)
 		fseek(hdl->file.file, 0, SEEK_SET);
 
 	free(path);
+	return ret;
+}
+
+int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_new)
+{
+	wgm_global_lock_t lock;
+	int ret;
+
+	ret = wgm_global_lock_open(&lock, hdl->ctx, "iface.lock");
+	if (ret)
+		return ret;
+
+	ret = __wgm_iface_hdl_open(hdl, dev, create_new);
+	wgm_global_lock_close(&lock);
 	return ret;
 }
 
@@ -704,4 +800,183 @@ int wgm_iface_hdl_store(struct wgm_iface_hdl *hdl, struct wgm_iface *iface)
 	ret = wgm_file_put_contents(&hdl->file, jstr, strlen(jstr));
 	json_object_put(obj);
 	return ret;
+}
+
+int wgm_array_iface_add(struct wgm_array_iface *arr, const struct wgm_iface *iface)
+{
+	struct wgm_iface *tmp;
+	size_t new_len;
+	int ret;
+
+	new_len = arr->len + 1;
+	tmp = realloc(arr->arr, new_len * sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	ret = wgm_iface_copy(&tmp[arr->len], iface);
+	if (ret)
+		return ret;
+
+	arr->arr = tmp;
+	arr->len = new_len;
+	return 0;
+}
+
+int wgm_array_iface_add_mv(struct wgm_array_iface *arr, struct wgm_iface *iface)
+{
+	struct wgm_iface *tmp;
+	size_t new_len;
+
+	new_len = arr->len + 1;
+	tmp = realloc(arr->arr, new_len * sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	tmp[arr->len] = *iface;
+	memset(iface, 0, sizeof(*iface));
+	arr->arr = tmp;
+	arr->len = new_len;
+	return 0;
+}
+
+int wgm_array_iface_del(struct wgm_array_iface *arr, size_t idx)
+{
+	size_t i;
+
+	if (idx >= arr->len)
+		return -EINVAL;
+
+	wgm_iface_free(&arr->arr[idx]);
+	for (i = idx; i < arr->len - 1; i++)
+		arr->arr[i] = arr->arr[i + 1];
+
+	arr->len--;
+	return 0;
+}
+
+int wgm_array_iface_find(struct wgm_array_iface *arr, const char *ifname, size_t *idx)
+{
+	size_t i;
+
+	for (i = 0; i < arr->len; i++) {
+		if (!strcmp(arr->arr[i].ifname, ifname)) {
+			*idx = i;
+			return 0;
+		}
+	}
+
+	return -ENOENT;
+}
+
+int wgm_array_iface_add_unique(struct wgm_array_iface *arr, const struct wgm_iface *iface)
+{
+	size_t idx;
+	int ret;
+
+	ret = wgm_array_iface_find(arr, iface->ifname, &idx);
+	if (!ret)
+		return 0;
+
+	if (ret != -ENOENT)
+		return ret;
+
+	return wgm_array_iface_add(arr, iface);
+}
+
+int wgm_array_iface_copy(struct wgm_array_iface *dst, const struct wgm_array_iface *src)
+{
+	size_t i;
+	int ret;
+
+	memset(dst, 0, sizeof(*dst));
+	for (i = 0; i < src->len; i++) {
+		ret = wgm_array_iface_add(dst, &src->arr[i]);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+void wgm_array_iface_free(struct wgm_array_iface *arr)
+{
+	size_t i;
+
+	for (i = 0; i < arr->len; i++)
+		wgm_iface_free(&arr->arr[i]);
+
+	free(arr->arr);
+	memset(arr, 0, sizeof(*arr));
+}
+
+void wgm_array_iface_move(struct wgm_array_iface *dst, struct wgm_array_iface *src)
+{
+	*dst = *src;
+	memset(src, 0, sizeof(*src));
+}
+
+int wgm_array_iface_to_json(const struct wgm_array_iface *arr, json_object **obj)
+{
+	json_object *ret, *tmp;
+	size_t i;
+	int err = 0;
+
+	ret = json_object_new_array();
+	if (!ret)
+		return -ENOMEM;
+
+	for (i = 0; i < arr->len; i++) {
+		err = wgm_iface_to_json(&arr->arr[i], &tmp);
+		if (err)
+			goto out_err;
+
+		err = json_object_array_add(ret, tmp);
+		if (err) {
+			json_object_put(tmp);
+			goto out_err;
+		}
+	}
+
+	*obj = ret;
+	return 0;
+
+out_err:
+	json_object_put(ret);
+	return -ENOMEM;
+}
+
+int wgm_array_iface_from_json(struct wgm_array_iface *arr, const json_object *obj)
+{
+	size_t i;
+	int ret;
+
+	if (!json_object_is_type(obj, json_type_array))
+		return -EINVAL;
+
+	memset(arr, 0, sizeof(*arr));
+	for (i = 0; i < (size_t)json_object_array_length(obj); i++) {
+		struct wgm_iface iface;
+		json_object *tmp;
+
+		tmp = json_object_array_get_idx(obj, i);
+		if (!tmp) {
+			wgm_array_iface_free(arr);
+			return -EINVAL;
+		}
+
+		ret = wgm_iface_from_json(&iface, tmp);
+		if (ret) {
+			wgm_array_iface_free(arr);
+			return ret;
+		}
+
+		ret = wgm_array_iface_add(arr, &iface);
+		wgm_iface_free(&iface);
+		if (ret) {
+			wgm_array_iface_free(arr);
+			return ret;
+		}
+	}
+
+	return 0;
 }
