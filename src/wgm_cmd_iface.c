@@ -386,6 +386,7 @@ int wgm_iface_to_json(const struct wgm_iface *iface, json_object **obj)
 	err |= json_object_object_add(ret, "ifname", json_object_new_string(iface->ifname));
 	err |= json_object_object_add(ret, "private_key", json_object_new_string(iface->private_key));
 	err |= json_object_object_add(ret, "listen_port", json_object_new_int(iface->listen_port));
+	err |= json_object_object_add(ret, "mtu", json_object_new_int(iface->mtu));
 	if (err)
 		goto out_err;
 
@@ -415,6 +416,19 @@ out_err:
 
 int wgm_iface_from_json(struct wgm_iface *iface, const json_object *obj)
 {
+	int err = 0;
+
+	err |= wgm_json_obj_kcp_str(obj, "ifname", iface->ifname, sizeof(iface->ifname));
+	err |= wgm_json_obj_kcp_str(obj, "private_key", iface->private_key, sizeof(iface->private_key));
+	err |= wgm_json_obj_kcp_uint16_t(obj, "listen_port", &iface->listen_port);
+	err |= wgm_json_obj_kcp_uint16_t(obj, "mtu", &iface->mtu);
+	if (err)
+		return -EINVAL;
+
+	err = wgm_json_obj_kcp_str_array(obj, "addresses", &iface->addresses);
+	if (err)
+		return err;
+
 	return 0;
 }
 
@@ -570,4 +584,11 @@ int wgm_iface_hdl_store(struct wgm_iface_hdl *hdl, struct wgm_iface *iface)
 	ret = wgm_file_put_contents(&hdl->file, jstr, strlen(jstr));
 	json_object_put(obj);
 	return ret;
+}
+
+char *strncpyl(char *dest, const char *src, size_t n)
+{
+	strncpy(dest, src, n - 1);
+	dest[n - 1] = '\0';
+	return dest;
 }

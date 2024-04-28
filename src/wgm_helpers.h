@@ -75,4 +75,66 @@ struct wgm_ctx;
 int wgm_global_lock_open(wgm_global_lock_t *lock, struct wgm_ctx *ctx, const char *path);
 int wgm_global_lock_close(wgm_global_lock_t *lock);
 
+char *strncpyl(char *dest, const char *src, size_t n);
+
+static inline int wgm_json_obj_kcp_str(const json_object *obj, const char *key,
+				       char *buf, size_t len)
+{
+	json_object *val;
+	const char *str;
+
+	if (!json_object_object_get_ex(obj, key, &val))
+		return -EINVAL;
+
+	if (!json_object_is_type(val, json_type_string))
+		return -EINVAL;
+
+	str = json_object_get_string(val);
+	strncpyl(buf, str, len);
+	return 0;
+}
+
+static inline int wgm_json_obj_kcp_str_array(const json_object *obj, const char *key,
+					     struct wgm_array_str *arr)
+{
+	json_object *val;
+
+	if (!json_object_object_get_ex(obj, key, &val))
+		return -EINVAL;
+
+	if (!json_object_is_type(val, json_type_array))
+		return -EINVAL;
+
+	return wgm_array_str_from_json(arr, val);
+}
+
+#define DEF_WGM_JSON_INT_GETTER(type)					\
+static inline int wgm_json_obj_kcp_##type(const json_object *obj,	\
+						const char *key,	\
+						type *val)		\
+{									\
+	json_object *jval;						\
+									\
+	if (!json_object_object_get_ex(obj, key, &jval))		\
+		return -EINVAL;						\
+									\
+	if (!json_object_is_type(jval, json_type_int))			\
+		return -EINVAL;						\
+									\
+	*val = (type)json_object_get_int64(jval);			\
+	return 0;							\
+}
+
+DEF_WGM_JSON_INT_GETTER(int)
+DEF_WGM_JSON_INT_GETTER(uint64_t)
+DEF_WGM_JSON_INT_GETTER(uint32_t)
+DEF_WGM_JSON_INT_GETTER(uint16_t)
+DEF_WGM_JSON_INT_GETTER(uint8_t)
+
+DEF_WGM_JSON_INT_GETTER(int64_t)
+DEF_WGM_JSON_INT_GETTER(int32_t)
+DEF_WGM_JSON_INT_GETTER(int16_t)
+DEF_WGM_JSON_INT_GETTER(int8_t)
+
+
 #endif /* #ifndef WGM__WG_HELPERS_H */
