@@ -18,54 +18,32 @@ int wgm_peer_to_json(const struct wgm_peer *peer, json_object **ret)
 	json_object *tmp;
 	int err = 0;
 
-	*ret = json_object_new_object();
-	if (!*ret)
+	tmp = json_object_new_object();
+	if (!tmp)
 		return -ENOMEM;
 
-	err |= json_object_object_add(*ret, "public_key", json_object_new_string(peer->public_key));
-	if (err)
-		goto out_err;
+	err |= wgm_json_obj_set_str(tmp, "public_key", peer->public_key);
+	err |= wgm_json_obj_set_str_array(tmp, "addresses", &peer->addresses);
+	if (err) {
+		json_object_put(tmp);
+		return -ENOMEM;
+	}
 
-	err = wgm_array_str_to_json(&peer->addresses, &tmp);
-	if (err)
-		goto out_err;
-
-	err = json_object_object_add(*ret, "addresses", tmp);
-	if (err)
-		goto out_err;
-
+	*ret = tmp;
 	return 0;
-
-out_err:
-	json_object_put(*ret);
-	return -ENOMEM;
 }
 
 int wgm_peer_from_json(struct wgm_peer *peer, const json_object *obj)
 {
-	json_object *tmp;
-	const char *str;
 	int err = 0;
 
-	if (!json_object_object_get_ex(obj, "public_key", &tmp))
+	memset(peer, 0, sizeof(*peer));
+	err |= wgm_json_obj_kcp_str(obj, "public_key", peer->public_key, sizeof(peer->public_key));
+	err |= wgm_json_obj_kcp_str_array(obj, "addresses", &peer->addresses);
+	if (err) {
+		wgm_peer_free(peer);
 		return -EINVAL;
-
-	str = json_object_get_string(tmp);
-	if (!str)
-		return -EINVAL;
-
-
-	if (strlen(str) >= sizeof(peer->public_key))
-		return -EINVAL;
-
-	strcpy(peer->public_key, str);
-
-	if (!json_object_object_get_ex(obj, "addresses", &tmp))
-		return -EINVAL;
-
-	err = wgm_array_str_from_json(&peer->addresses, tmp);
-	if (err)
-		return err;
+	}
 
 	return 0;
 }
