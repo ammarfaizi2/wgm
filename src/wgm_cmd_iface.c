@@ -589,6 +589,14 @@ static int wgm_cmd_iface_run(const char *app, struct wgm_ctx *ctx, const char *c
 	if (!strcmp(cmd, "update"))
 		return wg_cmd_iface_update(app, ctx, arg, arg_bits);
 
+	if (!strcmp(cmd, "up"))
+		return -ENOSYS;
+
+	if (!strcmp(cmd, "down"))
+		return -ENOSYS;
+
+	wgm_err_elog_add("Error: Unknown command: '%s'\n", cmd);
+	wgm_cmd_iface_show_usage(app, 1);
 	return -EINVAL;
 }
 

@@ -68,6 +68,12 @@ void wgm_cmd_peer_show_usage(const char *app, int show_cmds)
 	printf("\n");
 }
 
+static void wgm_peer_arg_free(struct wgm_peer_arg *arg)
+{
+	wgm_array_str_free(&arg->addrs);
+	memset(arg, 0, sizeof(*arg));
+}
+
 static int parse_args(int argc, char *argv[], struct wgm_peer_arg *arg,
 		      uint64_t *out_args_p)
 {
@@ -144,6 +150,11 @@ out:
 	return ret;
 }
 
+static int wgm_cmd_peer_run(const char *app, struct wgm_ctx *ctx, const char *cmd,
+			    struct wgm_peer_arg *arg, uint64_t out_args)
+{
+}
+
 int wgm_cmd_peer(int argc, char *argv[], struct wgm_ctx *ctx)
 {
 	struct wgm_peer_arg arg;
@@ -162,6 +173,8 @@ int wgm_cmd_peer(int argc, char *argv[], struct wgm_ctx *ctx)
 	if (ret)
 		return ret;
 
+	ret = wgm_cmd_peer_run(app, ctx, cmd, &arg, out_args);
+	wgm_peer_arg_free(&arg);
 	return 0;
 }
 
