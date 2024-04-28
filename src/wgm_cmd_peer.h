@@ -37,4 +37,22 @@ void wgm_array_peer_free(struct wgm_array_peer *peer_array);
 int wgm_array_peer_to_json(const struct wgm_array_peer *arr, json_object **obj);
 int wgm_array_peer_from_json(struct wgm_array_peer *arr, const json_object *obj);
 
+
+static inline int wgm_json_obj_set_peer_array(json_object *obj, const char *key,
+					      const struct wgm_array_peer *arr)
+{
+	json_object *val;
+	int ret;
+
+	ret = wgm_array_peer_to_json(arr, &val);
+	if (ret)
+		return ret;
+
+	ret = json_object_object_add(obj, key, val);
+	if (ret)
+		json_object_put(val);
+
+	return ret;
+}
+
 #endif /* #ifndef WGM__WG_CMD_PEER_H */

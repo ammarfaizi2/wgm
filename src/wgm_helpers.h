@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -136,5 +137,66 @@ DEF_WGM_JSON_INT_GETTER(int32_t)
 DEF_WGM_JSON_INT_GETTER(int16_t)
 DEF_WGM_JSON_INT_GETTER(int8_t)
 
+static inline int wgm_json_obj_set_str(json_object *obj, const char *key, const char *val)
+{
+	json_object *jval;
+	int ret;
+
+	jval = json_object_new_string(val);
+	if (!jval)
+		return -ENOMEM;
+
+	ret = json_object_object_add(obj, key, jval);
+	if (ret)
+		json_object_put(jval);
+
+	return ret;
+}
+
+static inline int wgm_json_obj_set_str_array(json_object *obj, const char *key,
+					     const struct wgm_array_str *arr)
+{
+	json_object *val;
+	int ret;
+
+	ret = wgm_array_str_to_json(arr, &val);
+	if (ret)
+		return ret;
+
+	ret = json_object_object_add(obj, key, val);
+	if (ret)
+		json_object_put(val);
+
+	return ret;
+}
+
+#define DEF_WGM_JSON_INT_SETTER(type)					\
+static inline int wgm_json_obj_set_##type(json_object *obj,		\
+					  const char *key, type val)	\
+{									\
+	json_object *jval;						\
+	int ret;							\
+									\
+	jval = json_object_new_int64(val);				\
+	if (!jval)							\
+		return -ENOMEM;						\
+									\
+	ret = json_object_object_add(obj, key, jval);			\
+	if (ret)							\
+		json_object_put(jval);					\
+									\
+	return ret;							\
+}
+
+DEF_WGM_JSON_INT_SETTER(int)
+DEF_WGM_JSON_INT_SETTER(uint64_t)
+DEF_WGM_JSON_INT_SETTER(uint32_t)
+DEF_WGM_JSON_INT_SETTER(uint16_t)
+DEF_WGM_JSON_INT_SETTER(uint8_t)
+
+DEF_WGM_JSON_INT_SETTER(int64_t)
+DEF_WGM_JSON_INT_SETTER(int32_t)
+DEF_WGM_JSON_INT_SETTER(int16_t)
+DEF_WGM_JSON_INT_SETTER(int8_t)
 
 #endif /* #ifndef WGM__WG_HELPERS_H */

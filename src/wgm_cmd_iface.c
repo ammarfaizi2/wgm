@@ -618,46 +618,26 @@ int wgm_cmd_iface(int argc, char *argv[], struct wgm_ctx *ctx)
 
 int wgm_iface_to_json(const struct wgm_iface *iface, json_object **obj)
 {
-	json_object *ret, *tmp;
+	json_object *ret;
 	int err = 0;
 
 	ret = json_object_new_object();
 	if (!ret)
 		return -ENOMEM;
 
-	err |= json_object_object_add(ret, "ifname", json_object_new_string(iface->ifname));
-	err |= json_object_object_add(ret, "private_key", json_object_new_string(iface->private_key));
-	err |= json_object_object_add(ret, "listen_port", json_object_new_int(iface->listen_port));
-	err |= json_object_object_add(ret, "mtu", json_object_new_int(iface->mtu));
-	if (err)
-		goto out_err;
-
-	err = wgm_array_str_to_json(&iface->addresses, &tmp);
-	if (err)
-		goto out_err;
-
-	err = json_object_object_add(ret, "addresses", tmp);
+	err |= wgm_json_obj_set_str(ret, "ifname", iface->ifname);
+	err |= wgm_json_obj_set_str(ret, "private_key", iface->private_key);
+	err |= wgm_json_obj_set_uint16_t(ret, "listen_port", iface->listen_port);
+	err |= wgm_json_obj_set_uint16_t(ret, "mtu", iface->mtu);
+	err |= wgm_json_obj_set_str_array(ret, "addresses", &iface->addresses);
+	err |= wgm_json_obj_set_peer_array(ret, "peers", &iface->peers);
 	if (err) {
-		json_object_put(tmp);
-		goto out_err;
-	}
-
-	err = wgm_array_peer_to_json(&iface->peers, &tmp);
-	if (err)
-		goto out_err;
-
-	err = json_object_object_add(ret, "peers", tmp);
-	if (err) {
-		json_object_put(tmp);
-		goto out_err;
+		json_object_put(ret);
+		return -ENOMEM;
 	}
 
 	*obj = ret;
 	return 0;
-
-out_err:
-	json_object_put(ret);
-	return -ENOMEM;
 }
 
 int wgm_iface_from_json(struct wgm_iface *iface, const json_object *obj)
