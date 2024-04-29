@@ -210,28 +210,14 @@ static int wg_apply_arg_to_peer(struct wgm_peer *peer, struct wgm_peer_arg *arg,
 	return 0;
 }
 
-static int wgm_cmd_peer_add(const char *app, struct wgm_ctx *ctx,
-			    struct wgm_peer_arg *arg, uint64_t arg_bits)
+static int do_peer_add(struct wgm_ctx *ctx, struct wgm_peer_arg *arg,
+		       uint64_t arg_bits)
 {
-	static const uint64_t required_bits = PEER_OPT_DEV |
-					      PEER_OPT_PUBLIC_KEY |
-					      PEER_OPT_ADDRS;
-
-	static const uint64_t allowed_bits = required_bits |
-					       PEER_OPT_BIND_DEV |
-					       PEER_OPT_BIND_IP |
-					       PEER_OPT_BIND_GATEWAY |
-					       PEER_OPT_FORCE |
-					       PEER_OPT_UP;
-
 	struct wgm_iface_hdl hdl;
 	struct wgm_iface iface;
 	struct wgm_peer peer;
-	size_t idx = 0;
-	int ret = 0;
-
-	if (!validate_args(app, arg, arg_bits, required_bits, allowed_bits))
-		return -EINVAL;
+	size_t idx;
+	int ret;
 
 	memset(&iface, 0, sizeof(iface));
 	memset(&peer, 0, sizeof(peer));
@@ -239,9 +225,15 @@ static int wgm_cmd_peer_add(const char *app, struct wgm_ctx *ctx,
 
 	hdl.ctx = ctx;
 	ret = wgm_iface_hdl_open_and_load(&hdl, arg->dev, false, &iface);
-	if (ret)
+	if (ret) {
+		wgm_err_elog_add("Error: Failed to load interface: %s\n", arg->dev);
 		return ret;
+	}
 
+	/*
+	 * Try to find the peer in the interface, if it exists, update will
+	 * be performed if --force is set, otherwise return -EEXIST.
+	 */
 	ret = wgm_array_peer_find(&iface.peers, arg->public_key, &idx);
 	if (!ret) {
 		if (!arg->force) {
@@ -276,7 +268,29 @@ static int wgm_cmd_peer_add(const char *app, struct wgm_ctx *ctx,
 out:
 	wgm_iface_hdl_close(&hdl);
 	wgm_iface_free(&iface);
+	wgm_peer_free(&peer);
 	return ret;
+}
+
+static int wgm_cmd_peer_add(const char *app, struct wgm_ctx *ctx,
+			    struct wgm_peer_arg *arg, uint64_t arg_bits)
+{
+	static const uint64_t required_bits = PEER_OPT_DEV |
+					      PEER_OPT_PUBLIC_KEY |
+					      PEER_OPT_ADDRS;
+
+	static const uint64_t allowed_bits = required_bits |
+					       PEER_OPT_BIND_DEV |
+					       PEER_OPT_BIND_IP |
+					       PEER_OPT_BIND_GATEWAY |
+					       PEER_OPT_FORCE |
+					       PEER_OPT_UP;
+
+	if (!validate_args(app, arg, arg_bits, required_bits, allowed_bits))
+		return -EINVAL;
+
+
+	return do_peer_add(ctx, arg, arg_bits);
 }
 
 static int wgm_cmd_peer_run(const char *app, struct wgm_ctx *ctx, const char *cmd,
