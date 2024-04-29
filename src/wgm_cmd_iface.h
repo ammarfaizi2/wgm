@@ -43,11 +43,6 @@ int wgm_iface_copy(struct wgm_iface *dst, const struct wgm_iface *src);
 void wgm_iface_move(struct wgm_iface *dst, struct wgm_iface *src);
 void wgm_iface_free(struct wgm_iface *iface);
 
-int wgm_iface_peer_add(struct wgm_iface *iface, const struct wgm_peer *peer);
-int wgm_iface_peer_del(struct wgm_iface *iface, size_t idx);
-int wgm_iface_peer_find(struct wgm_iface *iface, const char *pub_key, size_t *idx);
-int wgm_iface_peer_add_unique(struct wgm_iface *iface, const struct wgm_peer *peer);
-
 int wgm_array_iface_add(struct wgm_array_iface *arr, const struct wgm_iface *iface);
 int wgm_array_iface_add_mv(struct wgm_array_iface *arr, struct wgm_iface *iface);
 int wgm_array_iface_del(struct wgm_array_iface *arr, size_t idx);
