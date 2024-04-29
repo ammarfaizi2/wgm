@@ -663,6 +663,12 @@ int wgm_iface_from_json(struct wgm_iface *iface, const json_object *obj)
 	if (err)
 		return err;
 
+	err = wgm_json_obj_kcp_peer_array(obj, "peers", &iface->peers);
+	if (err) {
+		wgm_array_str_free(&iface->addresses);
+		return err;
+	}
+
 	return 0;
 }
 
@@ -791,7 +797,7 @@ out:
 	return ret;
 }
 
-int wgm_iface_hdl_store(struct wgm_iface_hdl *hdl, struct wgm_iface *iface)
+int wgm_iface_hdl_store(struct wgm_iface_hdl *hdl, const struct wgm_iface *iface)
 {
 	json_object *obj;
 	const char *jstr;

@@ -33,7 +33,7 @@ int __wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create
 int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_new);
 int wgm_iface_hdl_close(struct wgm_iface_hdl *hdl);
 int wgm_iface_hdl_load(struct wgm_iface_hdl *hdl, struct wgm_iface *iface);
-int wgm_iface_hdl_store(struct wgm_iface_hdl *hdl, struct wgm_iface *iface);
+int wgm_iface_hdl_store(struct wgm_iface_hdl *hdl, const struct wgm_iface *iface);
 int wgm_iface_hdl_open_and_load(struct wgm_iface_hdl *hdl, const char *dev, bool create_new, struct wgm_iface *iface);
 
 int wgm_iface_to_json(const struct wgm_iface *iface, json_object **ret);

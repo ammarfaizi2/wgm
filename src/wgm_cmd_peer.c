@@ -257,8 +257,16 @@ static int wgm_cmd_peer_add(const char *app, struct wgm_ctx *ctx,
 		}
 	} else {
 		ret = wg_apply_arg_to_peer(&peer, arg, arg_bits);
-		if (ret)
+		if (ret) {
+			wgm_err_elog_add("Error: Failed to apply arguments to peer: %s\n", strerror(-ret));
 			goto out;
+		}
+
+		ret = wgm_array_peer_add_mv(&iface.peers, &peer);
+		if (ret) {
+			wgm_err_elog_add("Error: Failed to add peer %s: %s\n", arg->public_key, strerror(-ret));
+			goto out;
+		}
 	}
 
 	ret = wgm_iface_hdl_store(&hdl, &iface);
@@ -426,7 +434,7 @@ int wgm_array_peer_add_mv(struct wgm_array_peer *arr, struct wgm_peer *peer)
 	int ret;
 
 	ret = wgm_array_peer_add(arr, peer);
-	if (ret)
+	if (!ret)
 		wgm_peer_free(peer);
 
 	return ret;
@@ -512,5 +520,37 @@ out_err:
 
 int wgm_array_peer_from_json(struct wgm_array_peer *arr, const json_object *obj)
 {
+	json_object *tmp;
+	size_t i, len;
+	int ret;
+
+	if (!json_object_is_type(obj, json_type_array))
+		return -EINVAL;
+
+	memset(arr, 0, sizeof(*arr));
+	len = json_object_array_length(obj);
+	for (i = 0; i < len; i++) {
+		struct wgm_peer p;
+
+		tmp = json_object_array_get_idx(obj, i);
+		if (!json_object_is_type(tmp, json_type_object)) {
+			ret = -EINVAL;
+			break;
+		}
+
+		ret = wgm_peer_from_json(&p, tmp);
+		if (ret)
+			break;
+
+		ret = wgm_array_peer_add_mv(arr, &p);
+		if (ret) {
+			wgm_peer_free(&p);
+			break;
+		}
+	}
+
+	if (ret)
+		wgm_array_peer_free(arr);
+
 	return 0;
 }
