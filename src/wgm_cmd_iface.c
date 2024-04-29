@@ -733,6 +733,28 @@ int wgm_iface_hdl_open(struct wgm_iface_hdl *hdl, const char *dev, bool create_n
 	return ret;
 }
 
+int wgm_iface_hdl_open_and_load(struct wgm_iface_hdl *hdl, const char *dev,
+				bool create_new, struct wgm_iface *iface)
+{
+	int ret;
+
+	ret = wgm_iface_hdl_open(hdl, dev, create_new);
+	if (ret) {
+		wgm_err_elog_add("Failed to open interface file: %s: %s\n", dev, strerror(-ret));
+		return ret;
+	}
+
+	ret = wgm_iface_hdl_load(hdl, iface);
+	if (ret) {
+		if (!create_new)
+			wgm_err_elog_add("Failed to load interface file: %s: %s\n", dev, strerror(-ret));
+
+		wgm_iface_hdl_close(hdl);
+	}
+
+	return ret;
+}
+
 int wgm_iface_hdl_close(struct wgm_iface_hdl *hdl)
 {
 	return wgm_file_close(&hdl->file);
@@ -967,4 +989,66 @@ int wgm_array_iface_from_json(struct wgm_array_iface *arr, const json_object *ob
 	}
 
 	return 0;
+}
+
+int wgm_iface_peer_add(struct wgm_iface *iface, const struct wgm_peer *peer)
+{
+	struct wgm_peer *tmp;
+	size_t new_len;
+	int ret;
+
+	new_len = iface->peers.len + 1;
+	tmp = realloc(iface->peers.arr, new_len * sizeof(*tmp));
+	if (!tmp)
+		return -ENOMEM;
+
+	iface->peers.arr = tmp;
+	ret = wgm_peer_copy(&tmp[iface->peers.len], peer);
+	if (ret)
+		return ret;
+
+	iface->peers.len = new_len;
+	return 0;
+}
+
+int wgm_iface_peer_del(struct wgm_iface *iface, size_t idx)
+{
+	if (idx >= iface->peers.len)
+		return -EINVAL;
+
+	wgm_peer_free(&iface->peers.arr[idx]);
+	for (size_t i = idx; i < iface->peers.len - 1; i++)
+		iface->peers.arr[i] = iface->peers.arr[i + 1];
+
+	iface->peers.len--;
+	return 0;
+}
+
+int wgm_iface_peer_find(struct wgm_iface *iface, const char *pub_key, size_t *idx)
+{
+	size_t i;
+
+	for (i = 0; i < iface->peers.len; i++) {
+		if (!strcmp(iface->peers.arr[i].public_key, pub_key)) {
+			*idx = i;
+			return 0;
+		}
+	}
+
+	return -ENOENT;
+}
+
+int wgm_iface_peer_add_unique(struct wgm_iface *iface, const struct wgm_peer *peer)
+{
+	size_t idx;
+	int ret;
+
+	ret = wgm_iface_peer_find(iface, peer->public_key, &idx);
+	if (!ret)
+		return 0;
+
+	if (ret != -ENOENT)
+		return ret;
+
+	return wgm_iface_peer_add(iface, peer);
 }

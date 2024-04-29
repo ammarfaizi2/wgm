@@ -4,9 +4,15 @@
 
 #include "wgm.h"
 
+#include <arpa/inet.h>
+#include <linux/if.h>
+
 struct wgm_peer {
 	char			public_key[128];
 	struct wgm_array_str	addresses;
+	char			bind_gateway[INET6_ADDRSTRLEN];
+	char			bind_ip[INET6_ADDRSTRLEN];
+	char			bind_dev[IFNAMSIZ];
 };
 
 struct wgm_array_peer {

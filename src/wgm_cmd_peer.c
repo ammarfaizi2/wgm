@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 #include <string.h>
+#include <assert.h>
 
 #include "wgm_cmd_peer.h"
+#include "wgm_cmd_iface.h"
+#include "wgm.h"
 
 static const struct wgm_opt options[] = {
 	#define PEER_OPT_DEV			(1ull << 0ull)
 	{ PEER_OPT_DEV,			"dev",		required_argument,	NULL,	'd' },
 
-	#define PEER_OPT_PRIVATE_KEY		(1ull << 1ull)
-	{ PEER_OPT_PRIVATE_KEY,		"private-key",	required_argument,	NULL,	'k' },
+	#define PEER_OPT_PUBLIC_KEY		(1ull << 1ull)
+	{ PEER_OPT_PUBLIC_KEY,		"public-key",	required_argument,	NULL,	'k' },
 
 	#define PEER_OPT_ADDRS			(1ull << 2ull)
 	{ PEER_OPT_ADDRS,		"addresses",	required_argument,	NULL,	'A' },
@@ -34,7 +37,7 @@ static const struct wgm_opt options[] = {
 
 struct wgm_peer_arg {
 	const char		*dev;
-	const char		*private_key;
+	const char		*public_key;
 	struct wgm_array_str	addrs;
 	const char		*bind_dev;
 	const char		*bind_ip;
@@ -58,7 +61,7 @@ void wgm_cmd_peer_show_usage(const char *app, int show_cmds)
 
 	printf("\nOptions:\n");
 	printf("  -d, --dev <dev>              Interface name\n");
-	printf("  -k, --private-key <key>      Private key\n");
+	printf("  -k, --public-key <key>       Public key\n");
 	printf("  -A, --addresses <addr>       Peer addresses\n");
 	printf("  -b, --bind-dev <dev>         Bind device\n");
 	printf("  -B, --bind-ip <ip>           Bind IP address\n");
@@ -99,8 +102,8 @@ static int parse_args(int argc, char *argv[], struct wgm_peer_arg *arg,
 			break;
 
 		case 'k':
-			arg->private_key = optarg;
-			out_args |= PEER_OPT_PRIVATE_KEY;
+			arg->public_key = optarg;
+			out_args |= PEER_OPT_PUBLIC_KEY;
 			break;
 
 		case 'A':
@@ -150,9 +153,133 @@ out:
 	return ret;
 }
 
+static bool validate_args(const char *app, struct wgm_peer_arg *arg,
+			  uint64_t arg_bits, uint64_t required_bits,
+			  uint64_t allowed_bits)
+
+{
+	size_t i;
+
+	assert((required_bits & allowed_bits) == required_bits);
+	for (i = 0; i < ARRAY_SIZE(options); i++) {
+		uint64_t id = options[i].id;
+
+		if (!id)
+			continue;
+
+		if ((id & required_bits) && !(id & arg_bits)) {
+			wgm_err_elog_add("Error: Missing required option: --%s\n", options[i].name);
+			wgm_cmd_peer_show_usage(app, 1);
+			return false;
+		}
+
+		if (!(id & allowed_bits) && (id & arg_bits)) {
+			wgm_err_elog_add("Option --%s is not allowed for this command.\n", options[i].name);
+			wgm_cmd_peer_show_usage(app, 1);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static int wg_apply_arg_to_peer(struct wgm_peer *peer, struct wgm_peer_arg *arg,
+				uint64_t arg_bits)
+{
+	if (arg_bits & PEER_OPT_PUBLIC_KEY) {
+		if (strlen(arg->public_key) > sizeof(peer->public_key)) {
+			wgm_err_elog_add("Error: Private key is too long\n");
+			return -EINVAL;
+		}
+
+		strncpyl(peer->public_key, arg->public_key, sizeof(peer->public_key));
+	}
+
+	if (arg_bits & PEER_OPT_ADDRS)
+		wgm_array_str_move(&peer->addresses, &arg->addrs);
+
+	if (arg_bits & PEER_OPT_BIND_DEV)
+		strncpyl(peer->bind_dev, arg->bind_dev, sizeof(peer->bind_dev));
+
+	if (arg_bits & PEER_OPT_BIND_IP)
+		strncpyl(peer->bind_ip, arg->bind_ip, sizeof(peer->bind_ip));
+
+	if (arg_bits & PEER_OPT_BIND_GATEWAY)
+		strncpyl(peer->bind_gateway, arg->bind_gateway, sizeof(peer->bind_gateway));
+
+	return 0;
+}
+
+static int wgm_cmd_peer_add(const char *app, struct wgm_ctx *ctx,
+			    struct wgm_peer_arg *arg, uint64_t arg_bits)
+{
+	static const uint64_t required_bits = PEER_OPT_DEV |
+					      PEER_OPT_PUBLIC_KEY |
+					      PEER_OPT_ADDRS;
+
+	static const uint64_t allowed_bits = required_bits |
+					       PEER_OPT_BIND_DEV |
+					       PEER_OPT_BIND_IP |
+					       PEER_OPT_BIND_GATEWAY |
+					       PEER_OPT_FORCE |
+					       PEER_OPT_UP;
+
+	struct wgm_iface_hdl hdl;
+	struct wgm_iface iface;
+	struct wgm_peer peer;
+	size_t idx = 0;
+	int ret = 0;
+
+	if (!validate_args(app, arg, arg_bits, required_bits, allowed_bits))
+		return -EINVAL;
+
+	memset(&iface, 0, sizeof(iface));
+	memset(&peer, 0, sizeof(peer));
+	memset(&hdl, 0, sizeof(hdl));
+
+	hdl.ctx = ctx;
+	ret = wgm_iface_hdl_open_and_load(&hdl, arg->dev, false, &iface);
+	if (ret)
+		return ret;
+
+	ret = wgm_array_peer_find(&iface.peers, arg->public_key, &idx);
+	if (!ret) {
+		if (!arg->force) {
+			wgm_err_elog_add("Error: Peer %s already exists, use --force to force update\n", arg->public_key);
+			ret = -EEXIST;
+			goto out;
+		}
+
+		ret = wg_apply_arg_to_peer(&iface.peers.arr[idx], arg, arg_bits);
+		if (ret) {
+			wgm_err_elog_add("Error: Failed to update peer %s: %s\n", arg->public_key, strerror(-ret));
+			goto out;
+		}
+	} else {
+		ret = wg_apply_arg_to_peer(&peer, arg, arg_bits);
+		if (ret)
+			goto out;
+	}
+
+	ret = wgm_iface_hdl_store(&hdl, &iface);
+	if (ret)
+		wgm_err_elog_add("Error: Failed to store interface: %s\n", arg->dev);
+
+out:
+	wgm_iface_hdl_close(&hdl);
+	wgm_iface_free(&iface);
+	return ret;
+}
+
 static int wgm_cmd_peer_run(const char *app, struct wgm_ctx *ctx, const char *cmd,
 			    struct wgm_peer_arg *arg, uint64_t out_args)
 {
+	if (!strcmp(cmd, "add"))
+		return wgm_cmd_peer_add(app, ctx, arg, out_args);
+
+	wgm_err_elog_add("Error: Unknown command: '%s'\n", cmd);
+	wgm_cmd_peer_show_usage(app, 1);
+	return -EINVAL;
 }
 
 int wgm_cmd_peer(int argc, char *argv[], struct wgm_ctx *ctx)
