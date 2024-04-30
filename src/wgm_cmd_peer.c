@@ -388,6 +388,9 @@ int wgm_peer_to_json(const struct wgm_peer *peer, json_object **ret)
 
 	err |= wgm_json_obj_set_str(tmp, "public_key", peer->public_key);
 	err |= wgm_json_obj_set_str_array(tmp, "addresses", &peer->addresses);
+	err |= wgm_json_obj_set_str(tmp, "bind_gateway", peer->bind_gateway);
+	err |= wgm_json_obj_set_str(tmp, "bind_ip", peer->bind_ip);
+	err |= wgm_json_obj_set_str(tmp, "bind_dev", peer->bind_dev);
 	if (err) {
 		json_object_put(tmp);
 		return -ENOMEM;
@@ -404,6 +407,9 @@ int wgm_peer_from_json(struct wgm_peer *peer, const json_object *obj)
 	memset(peer, 0, sizeof(*peer));
 	err |= wgm_json_obj_kcp_str(obj, "public_key", peer->public_key, sizeof(peer->public_key));
 	err |= wgm_json_obj_kcp_str_array(obj, "addresses", &peer->addresses);
+	err |= wgm_json_obj_kcp_str(obj, "bind_dev", peer->bind_dev, sizeof(peer->bind_dev));
+	err |= wgm_json_obj_kcp_str(obj, "bind_ip", peer->bind_ip, sizeof(peer->bind_ip));
+	err |= wgm_json_obj_kcp_str(obj, "bind_gateway", peer->bind_gateway, sizeof(peer->bind_gateway));
 	if (err) {
 		wgm_peer_free(peer);
 		return -EINVAL;
