@@ -20,8 +20,8 @@ static const struct wgm_opt options[] = {
 	#define PEER_OPT_BIND_DEV		(1ull << 3ull)
 	{ PEER_OPT_BIND_DEV,		"bind-dev",	required_argument,	NULL,	'b' },
 
-	#define PEER_OPT_BIND_IP		(1ull << 4ull)
-	{ PEER_OPT_BIND_IP,		"bind-ip",	required_argument,	NULL,	'B' },
+	#define PEER_OPT_BIND_ADDR		(1ull << 4ull)
+	{ PEER_OPT_BIND_ADDR,		"bind-addr",	required_argument,	NULL,	'B' },
 
 	#define PEER_OPT_BIND_GATEWAY		(1ull << 5ull)
 	{ PEER_OPT_BIND_GATEWAY,	"bind-gateway",	required_argument,	NULL,	'g' },
@@ -40,7 +40,7 @@ struct wgm_peer_arg {
 	const char		*public_key;
 	struct wgm_array_str	addrs;
 	const char		*bind_dev;
-	const char		*bind_ip;
+	const char		*bind_addr;
 	const char		*bind_gateway;
 	bool			force;
 	bool			up;
@@ -64,7 +64,7 @@ void wgm_cmd_peer_show_usage(const char *app, int show_cmds)
 	printf("  -k, --public-key <key>       Public key\n");
 	printf("  -A, --addresses <addr>       Peer addresses\n");
 	printf("  -b, --bind-dev <dev>         Bind device\n");
-	printf("  -B, --bind-ip <ip>           Bind IP address\n");
+	printf("  -B, --bind-addr <ip>         Bind IP address\n");
 	printf("  -g, --bind-gateway <ip>      Bind gateway\n");
 	printf("  -f, --force                  Force operation\n");
 	printf("  -u, --up                     Bring up the peer\n");
@@ -121,8 +121,8 @@ static int parse_args(int argc, char *argv[], struct wgm_peer_arg *arg,
 			break;
 
 		case 'B':
-			arg->bind_ip = optarg;
-			out_args |= PEER_OPT_BIND_IP;
+			arg->bind_addr = optarg;
+			out_args |= PEER_OPT_BIND_ADDR;
 			break;
 
 		case 'g':
@@ -201,8 +201,8 @@ static int wg_apply_arg_to_peer(struct wgm_peer *peer, struct wgm_peer_arg *arg,
 	if (arg_bits & PEER_OPT_BIND_DEV)
 		strncpyl(peer->bind_dev, arg->bind_dev, sizeof(peer->bind_dev));
 
-	if (arg_bits & PEER_OPT_BIND_IP)
-		strncpyl(peer->bind_ip, arg->bind_ip, sizeof(peer->bind_ip));
+	if (arg_bits & PEER_OPT_BIND_ADDR)
+		strncpyl(peer->bind_addr, arg->bind_addr, sizeof(peer->bind_addr));
 
 	if (arg_bits & PEER_OPT_BIND_GATEWAY)
 		strncpyl(peer->bind_gateway, arg->bind_gateway, sizeof(peer->bind_gateway));
@@ -305,7 +305,7 @@ static int wgm_cmd_peer_add(const char *app, struct wgm_ctx *ctx,
 
 	static const uint64_t allowed_bits = required_bits |
 					       PEER_OPT_BIND_DEV |
-					       PEER_OPT_BIND_IP |
+					       PEER_OPT_BIND_ADDR |
 					       PEER_OPT_BIND_GATEWAY |
 					       PEER_OPT_FORCE |
 					       PEER_OPT_UP;
@@ -327,7 +327,7 @@ static int wgm_cmd_peer_update(const char *app, struct wgm_ctx *ctx,
 	static const uint64_t allowed_bits = required_bits |
 					       PEER_OPT_ADDRS |
 					       PEER_OPT_BIND_DEV |
-					       PEER_OPT_BIND_IP |
+					       PEER_OPT_BIND_ADDR |
 					       PEER_OPT_BIND_GATEWAY |
 					       PEER_OPT_FORCE |
 					       PEER_OPT_UP;
@@ -388,9 +388,9 @@ int wgm_peer_to_json(const struct wgm_peer *peer, json_object **ret)
 
 	err |= wgm_json_obj_set_str(tmp, "public_key", peer->public_key);
 	err |= wgm_json_obj_set_str_array(tmp, "addresses", &peer->addresses);
-	err |= wgm_json_obj_set_str(tmp, "bind_gateway", peer->bind_gateway);
-	err |= wgm_json_obj_set_str(tmp, "bind_ip", peer->bind_ip);
-	err |= wgm_json_obj_set_str(tmp, "bind_dev", peer->bind_dev);
+	err |= wgm_json_obj_set_str_ine(tmp, "bind_gateway", peer->bind_gateway);
+	err |= wgm_json_obj_set_str_ine(tmp, "bind_addr", peer->bind_addr);
+	err |= wgm_json_obj_set_str_ine(tmp, "bind_dev", peer->bind_dev);
 	if (err) {
 		json_object_put(tmp);
 		return -ENOMEM;
@@ -407,9 +407,14 @@ int wgm_peer_from_json(struct wgm_peer *peer, const json_object *obj)
 	memset(peer, 0, sizeof(*peer));
 	err |= wgm_json_obj_kcp_str(obj, "public_key", peer->public_key, sizeof(peer->public_key));
 	err |= wgm_json_obj_kcp_str_array(obj, "addresses", &peer->addresses);
-	err |= wgm_json_obj_kcp_str(obj, "bind_dev", peer->bind_dev, sizeof(peer->bind_dev));
-	err |= wgm_json_obj_kcp_str(obj, "bind_ip", peer->bind_ip, sizeof(peer->bind_ip));
-	err |= wgm_json_obj_kcp_str(obj, "bind_gateway", peer->bind_gateway, sizeof(peer->bind_gateway));
+
+	/*
+	 * Optional.
+	 */
+	wgm_json_obj_kcp_str(obj, "bind_dev", peer->bind_dev, sizeof(peer->bind_dev));
+	wgm_json_obj_kcp_str(obj, "bind_addr", peer->bind_addr, sizeof(peer->bind_addr));
+	wgm_json_obj_kcp_str(obj, "bind_gateway", peer->bind_gateway, sizeof(peer->bind_gateway));
+
 	if (err) {
 		wgm_peer_free(peer);
 		return -EINVAL;

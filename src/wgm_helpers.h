@@ -153,6 +153,17 @@ static inline int wgm_json_obj_set_str(json_object *obj, const char *key, const 
 	return ret;
 }
 
+/*
+ * Only if the string is not empty.
+ */
+static inline int wgm_json_obj_set_str_ine(json_object *obj, const char *key, const char *val)
+{
+	if (!val || !val[0])
+		return 0;
+
+	return wgm_json_obj_set_str(obj, key, val);
+}
+
 static inline int wgm_json_obj_set_str_array(json_object *obj, const char *key,
 					     const struct wgm_array_str *arr)
 {
