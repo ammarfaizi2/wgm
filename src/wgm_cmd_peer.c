@@ -210,17 +210,15 @@ static int wg_apply_arg_to_peer(struct wgm_peer *peer, struct wgm_peer_arg *arg,
 	return 0;
 }
 
-static int do_peer_add(struct wgm_ctx *ctx, struct wgm_peer_arg *arg,
-		       uint64_t arg_bits)
+static int do_peer_add_or_update(struct wgm_ctx *ctx, struct wgm_peer_arg *arg,
+				 uint64_t arg_bits, bool is_update)
 {
 	struct wgm_iface_hdl hdl;
 	struct wgm_iface iface;
-	struct wgm_peer peer;
 	size_t idx;
 	int ret;
 
 	memset(&iface, 0, sizeof(iface));
-	memset(&peer, 0, sizeof(peer));
 	memset(&hdl, 0, sizeof(hdl));
 
 	hdl.ctx = ctx;
@@ -235,10 +233,14 @@ static int do_peer_add(struct wgm_ctx *ctx, struct wgm_peer_arg *arg,
 	 * be performed if --force is set, otherwise return -EEXIST.
 	 */
 	ret = wgm_array_peer_find(&iface.peers, arg->public_key, &idx);
-	if (!ret) {
-		if (!arg->force) {
-			wgm_err_elog_add("Error: Peer %s already exists, use --force to force update\n", arg->public_key);
-			ret = -EEXIST;
+	if (is_update) {
+		if (ret == -ENOENT) {
+			wgm_err_elog_add("Error: Peer %s does not exist, use command 'add' to add a new peer\n", arg->public_key);
+			goto out;
+		}
+
+		if (ret) {
+			wgm_err_elog_add("Error: Failed to find peer %s: %s\n", arg->public_key, strerror(-ret));
 			goto out;
 		}
 
@@ -248,16 +250,39 @@ static int do_peer_add(struct wgm_ctx *ctx, struct wgm_peer_arg *arg,
 			goto out;
 		}
 	} else {
-		ret = wg_apply_arg_to_peer(&peer, arg, arg_bits);
 		if (ret) {
-			wgm_err_elog_add("Error: Failed to apply arguments to peer: %s\n", strerror(-ret));
-			goto out;
-		}
+			struct wgm_peer peer;
 
-		ret = wgm_array_peer_add_mv(&iface.peers, &peer);
-		if (ret) {
-			wgm_err_elog_add("Error: Failed to add peer %s: %s\n", arg->public_key, strerror(-ret));
-			goto out;
+			if (ret != -ENOENT) {
+				wgm_err_elog_add("Error: Failed to find peer %s: %s (expected -ENOENT return, but %d returned)\n", arg->public_key, strerror(-ret), ret);
+				goto out;
+			}
+
+			memset(&peer, 0, sizeof(peer));
+			ret = wg_apply_arg_to_peer(&peer, arg, arg_bits);
+			if (ret) {
+				wgm_err_elog_add("Error: Failed to apply arguments to peer: %s\n", strerror(-ret));
+				goto out;
+			}
+
+			ret = wgm_array_peer_add_mv_unique(&iface.peers, &peer);
+			if (ret) {
+				wgm_err_elog_add("Error: Failed to add peer: %s\n", strerror(-ret));
+				wgm_peer_free(&peer);
+				goto out;
+			}
+		} else {
+			if (!arg->force) {
+				wgm_err_elog_add("Error: Peer %s already exists, use --force to force update\n", arg->public_key);
+				ret = -EEXIST;
+				goto out;
+			}
+
+			ret = wg_apply_arg_to_peer(&iface.peers.arr[idx], arg, arg_bits);
+			if (ret) {
+				wgm_err_elog_add("Error: Failed to update peer %s: %s\n", arg->public_key, strerror(-ret));
+				goto out;
+			}
 		}
 	}
 
@@ -268,7 +293,6 @@ static int do_peer_add(struct wgm_ctx *ctx, struct wgm_peer_arg *arg,
 out:
 	wgm_iface_hdl_close(&hdl);
 	wgm_iface_free(&iface);
-	wgm_peer_free(&peer);
 	return ret;
 }
 
@@ -286,11 +310,34 @@ static int wgm_cmd_peer_add(const char *app, struct wgm_ctx *ctx,
 					       PEER_OPT_FORCE |
 					       PEER_OPT_UP;
 
+	static const bool is_update = false;
+
 	if (!validate_args(app, arg, arg_bits, required_bits, allowed_bits))
 		return -EINVAL;
 
+	return do_peer_add_or_update(ctx, arg, arg_bits, is_update);
+}
 
-	return do_peer_add(ctx, arg, arg_bits);
+static int wgm_cmd_peer_update(const char *app, struct wgm_ctx *ctx,
+			       struct wgm_peer_arg *arg, uint64_t arg_bits)
+{
+	static const uint64_t required_bits = PEER_OPT_DEV |
+					      PEER_OPT_PUBLIC_KEY;
+
+	static const uint64_t allowed_bits = required_bits |
+					       PEER_OPT_ADDRS |
+					       PEER_OPT_BIND_DEV |
+					       PEER_OPT_BIND_IP |
+					       PEER_OPT_BIND_GATEWAY |
+					       PEER_OPT_FORCE |
+					       PEER_OPT_UP;
+
+	static const bool is_update = true;
+
+	if (!validate_args(app, arg, arg_bits, required_bits, allowed_bits))
+		return -EINVAL;
+
+	return do_peer_add_or_update(ctx, arg, arg_bits, is_update);
 }
 
 static int wgm_cmd_peer_run(const char *app, struct wgm_ctx *ctx, const char *cmd,
@@ -298,6 +345,9 @@ static int wgm_cmd_peer_run(const char *app, struct wgm_ctx *ctx, const char *cm
 {
 	if (!strcmp(cmd, "add"))
 		return wgm_cmd_peer_add(app, ctx, arg, out_args);
+
+	if (!strcmp(cmd, "update"))
+		return wgm_cmd_peer_update(app, ctx, arg, out_args);
 
 	wgm_err_elog_add("Error: Unknown command: '%s'\n", cmd);
 	wgm_cmd_peer_show_usage(app, 1);
@@ -459,7 +509,7 @@ int wgm_array_peer_add_mv_unique(struct wgm_array_peer *arr, struct wgm_peer *pe
 	int ret;
 
 	ret = wgm_array_peer_add_unique(arr, peer);
-	if (ret)
+	if (!ret)
 		wgm_peer_free(peer);
 
 	return ret;
