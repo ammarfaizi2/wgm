@@ -4,4 +4,3 @@
 
 
 #endif /* #ifndef WGM_CMD_IFACE_HPP */
-
