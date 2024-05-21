@@ -21,6 +21,8 @@ WGMD_TARGET   = wgmd
 
 all: $(WGMD_TARGET)
 
+-include $(WGMD_DEPFILES)
+
 $(WGMD_TARGET): $(WGMD_SOURCES:.cpp=.o)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
