@@ -1,4 +1,6 @@
 /wgm
+/wgmd
 /wgm_data/
 /.vscode/
 *.o
+*.d

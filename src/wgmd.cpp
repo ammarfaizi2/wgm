@@ -1,5 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
 
-#include "wgm.hpp"
+#include <cstdio>
+#include <cstdlib>
+
+#include "wgmd.hpp"
 
 int main(int argc, char *argv[])
 {
