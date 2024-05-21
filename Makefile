@@ -3,7 +3,7 @@
 SRC_DIR   = ./src
 CC        = gcc
 CXX       = g++
-INCLUDES  = -I./src/third_party/json/include
+INCLUDES  = -I./src/third_party/json/include -I./src
 DEPFLAGS  = -MT "$@" -MMD -MP -MF "$(@:%.o=%.d)"
 CFLAGS    = $(INCLUDES) -Wall -Wextra -Os -ggdb3 -D_GNU_SOURCE $(DEPFLAGS)
 CXXFLAGS  = $(INCLUDES) -Wall -Wextra -Os -ggdb3 -D_GNU_SOURCE $(DEPFLAGS)
@@ -13,7 +13,9 @@ LIBS      = -lpthread
 
 WGMD_SOURCES = \
 	$(SRC_DIR)/wgm/wgmd.cpp \
-	$(SRC_DIR)/wgm/helpers.cpp
+	$(SRC_DIR)/wgm/wgmd_ctx.cpp \
+	$(SRC_DIR)/wgm/helpers.cpp \
+	$(SRC_DIR)/wgm/helpers/file_handle.cpp
 
 WGMD_HEADERS  = $(WGMD_SOURCES:.cpp=.hpp)
 WGMD_DEPFILES = $(WGMD_SOURCES:.cpp=.d)
