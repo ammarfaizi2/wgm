@@ -12,7 +12,7 @@ LIBS      = -lpthread
 
 
 WGMD_SOURCES = \
-	$(SRC_DIR)/wgmd.cpp \
+	$(SRC_DIR)/wgm/wgmd.cpp \
 	$(SRC_DIR)/wgm/helpers.cpp
 
 WGMD_HEADERS  = $(WGMD_SOURCES:.cpp=.hpp)
