@@ -18,16 +18,16 @@ SOURCE_FILES = \
 	src/wgm_cmd_iface.cpp \
 	src/wgm_cmd_peer.cpp
 
-HEADER_FILES = $(SOURCE_FILES:.cpp=.h)
+HEADER_FILES = $(SOURCE_FILES:.cpp=.hpp)
 OBJECT_FILES = $(SOURCE_FILES:.cpp=.o)
 
 all: wgm
 
 wgm: $(OBJECT_FILES)
-	$(CC) $(LDFLAGS) -o $@ $(OBJECT_FILES) $(LDLIBS) -xc
+	$(CC) $(LDFLAGS) -o $@ $(OBJECT_FILES) $(LDLIBS)
 
-%.o: %.c $(HEADER_FILES)
-	$(CC) $(CFLAGS) -c -o $@ $< -xc
+%.o: %.cpp $(HEADER_FILES)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
 	rm -f wgm $(OBJECT_FILES)
