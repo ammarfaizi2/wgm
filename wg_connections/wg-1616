@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1616",
+  "timestamp_start": "1714646133786",
+  "timestamp_end": "1714646137023",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.215.171",
+  "wg_privkey": "4IsbjOW4QlGm5+scr6OYnsn81qggizfiaamAWO8ZsXw=",
+  "wg_pubkey": "TNrdH73p6h2EfeXxUiLOCOWHcjmjoslLxZptZpIPQXU=",
+  "wg_endpoint": "146.70.116.98:44612",
+  "wg_endpoint_ip": "146.70.116.98",
+  "wg_endpoint_port": "44612",
+  "local_interface": "i-wg-1616",
+  "local_interface_ip": "192.168.50.64",
+  "local_interface_ip_veth": "192.168.50.65",
+  "local_interface_route_table_id": "11568",
+  "local_interface_route_table_name": "rt-wg-1616",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "146.70.116.113",
+  "public_ip_info": {
+    "ip": "146.70.116.113",
+    "city": "Vienna",
+    "region": "Vienna",
+    "country": "AT",
+    "loc": "48.1433,16.2934",
+    "org": "AS9009 M247 Europe SRL",
+    "postal": "1230",
+    "timezone": "Europe/Vienna"
+  },
+  "socks5": {
+    "socks5_port": "55833",
+    "socks5_pid": "11461",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.64",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1616.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

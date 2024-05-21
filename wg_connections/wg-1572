@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1572",
+  "timestamp_start": "1714646118603",
+  "timestamp_end": "1714646121444",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.67.121.220",
+  "wg_privkey": "6KhOywd79N4gquSpcVPZFmlldMQ2pGmr96e7AXo2C3U=",
+  "wg_pubkey": "bZQF7VRDRK/JUJ8L6EFzF/zRw2tsqMRk6FesGtTgsC0=",
+  "wg_endpoint": "138.199.43.91:50222",
+  "wg_endpoint_ip": "138.199.43.91",
+  "wg_endpoint_port": "50222",
+  "local_interface": "i-wg-1572",
+  "local_interface_ip": "192.168.50.56",
+  "local_interface_ip_veth": "192.168.50.57",
+  "local_interface_route_table_id": "11564",
+  "local_interface_route_table_name": "rt-wg-1572",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "138.199.43.94",
+  "public_ip_info": {
+    "ip": "138.199.43.94",
+    "hostname": "unn-138-199-43-94.datapacket.com",
+    "city": "Seattle",
+    "region": "Washington",
+    "country": "US",
+    "loc": "47.6062,-122.3321",
+    "org": "AS212238 Datacamp Limited",
+    "postal": "98101",
+    "timezone": "America/Los_Angeles"
+  },
+  "socks5": {
+    "socks5_port": "55829",
+    "socks5_pid": "10249",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.56",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1572.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

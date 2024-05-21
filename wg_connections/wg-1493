@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1493",
+  "timestamp_start": "1714646084226",
+  "timestamp_end": "1714646087910",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.64.131.112",
+  "wg_privkey": "EJGUfNaB2n+RGyLxdAm7wOZFPat0I6Ybosamb7wO2m4=",
+  "wg_pubkey": "xeHVhXxyyFqUEE+nsu5Tzd/t9en+++4fVFcSFngpcAU=",
+  "wg_endpoint": "193.138.7.157:47442",
+  "wg_endpoint_ip": "193.138.7.157",
+  "wg_endpoint_port": "47442",
+  "local_interface": "i-wg-1493",
+  "local_interface_ip": "192.168.50.40",
+  "local_interface_ip_veth": "192.168.50.41",
+  "local_interface_route_table_id": "11555",
+  "local_interface_route_table_name": "rt-wg-1493",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "193.138.7.168",
+  "public_ip_info": {
+    "ip": "193.138.7.168",
+    "hostname": "s1931387168.blix.com",
+    "city": "Helsinki",
+    "region": "Uusimaa",
+    "country": "FI",
+    "loc": "60.1695,24.9354",
+    "org": "AS50304 Blix Solutions AS",
+    "postal": "00100",
+    "timezone": "Europe/Helsinki"
+  },
+  "socks5": {
+    "socks5_port": "55821",
+    "socks5_pid": "8296",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.40",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1493.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

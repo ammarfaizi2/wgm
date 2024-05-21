@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1789",
+  "timestamp_start": "1714646229430",
+  "timestamp_end": "1714646232388",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.68.8.222",
+  "wg_privkey": "mOflQStXMJnBz8ryJzA59Lz+TFGu207x8Ku3PapDsX4=",
+  "wg_pubkey": "ECeGYeh8CfPJO3v56ucCDdl+PlKcj2bBszUGkT+hVWQ=",
+  "wg_endpoint": "45.134.140.143:36318",
+  "wg_endpoint_ip": "45.134.140.143",
+  "wg_endpoint_port": "36318",
+  "local_interface": "i-wg-1789",
+  "local_interface_ip": "192.168.50.90",
+  "local_interface_ip_veth": "192.168.50.91",
+  "local_interface_route_table_id": "11587",
+  "local_interface_route_table_name": "rt-wg-1789",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "45.134.140.154",
+  "public_ip_info": {
+    "ip": "45.134.140.154",
+    "hostname": "unn-45-134-140-154.datapacket.com",
+    "city": "Atlanta",
+    "region": "Georgia",
+    "country": "US",
+    "loc": "33.7490,-84.3880",
+    "org": "AS212238 Datacamp Limited",
+    "postal": "30302",
+    "timezone": "America/New_York"
+  },
+  "socks5": {
+    "socks5_port": "55846",
+    "socks5_pid": "17145",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.90",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1789.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

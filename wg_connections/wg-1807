@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1807",
+  "timestamp_start": "1714646236406",
+  "timestamp_end": "1714646240110",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.66.45.216",
+  "wg_privkey": "SOpahgfow8W2rM+1p44Drn144jGrA92IPWOGcpegZV4=",
+  "wg_pubkey": "u+h0GmQJ8UBaMTi2BP9Ls6UUszcGC51y6vTmNr/y+AU=",
+  "wg_endpoint": "146.70.196.194:42332",
+  "wg_endpoint_ip": "146.70.196.194",
+  "wg_endpoint_port": "42332",
+  "local_interface": "i-wg-1807",
+  "local_interface_ip": "192.168.50.94",
+  "local_interface_ip_veth": "192.168.50.95",
+  "local_interface_route_table_id": "11589",
+  "local_interface_route_table_name": "rt-wg-1807",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "146.70.196.252",
+  "public_ip_info": {
+    "ip": "146.70.196.252",
+    "city": "Budapest",
+    "region": "Budapest",
+    "country": "HU",
+    "loc": "47.4984,19.0404",
+    "org": "AS9009 M247 Europe SRL",
+    "postal": "1132",
+    "timezone": "Europe/Budapest"
+  },
+  "socks5": {
+    "socks5_port": "55848",
+    "socks5_pid": "17557",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.94",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1807.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

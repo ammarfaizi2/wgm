@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1568",
+  "timestamp_start": "1714646115783",
+  "timestamp_end": "1714646118477",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.199.60",
+  "wg_privkey": "kKKnxOtGOLIKvDAiMcypyEf2DPC9tDb/M3l+2axGtFQ=",
+  "wg_pubkey": "Vim/OUBT3Bogv+FF623pAHXc/vmRwur2JKcNsLHQH1o=",
+  "wg_endpoint": "198.54.134.162:47631",
+  "wg_endpoint_ip": "198.54.134.162",
+  "wg_endpoint_port": "47631",
+  "local_interface": "i-wg-1568",
+  "local_interface_ip": "192.168.50.54",
+  "local_interface_ip_veth": "192.168.50.55",
+  "local_interface_route_table_id": "11563",
+  "local_interface_route_table_name": "rt-wg-1568",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "198.54.134.176",
+  "public_ip_info": {
+    "ip": "198.54.134.176",
+    "hostname": "static-198-54-134-176.cust.tzulo.com",
+    "city": "Sunnyvale",
+    "region": "California",
+    "country": "US",
+    "loc": "37.3764,-122.0238",
+    "org": "AS11878 tzulo, inc.",
+    "postal": "94086",
+    "timezone": "America/Los_Angeles"
+  },
+  "socks5": {
+    "socks5_port": "55828",
+    "socks5_pid": "10023",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.54",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1568.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

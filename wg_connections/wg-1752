@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1752",
+  "timestamp_start": "1714646214863",
+  "timestamp_end": "1714646218042",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.70.1.15",
+  "wg_privkey": "mCIWPL1F7gHBruiHKSZHuf62hWw7ZJvLOZSFzZCEuVE=",
+  "wg_pubkey": "JeEuObwimNmoVtPn4kpMI1y1UM+IChGVBLtmP3CNNVQ=",
+  "wg_endpoint": "138.199.34.143:39540",
+  "wg_endpoint_ip": "138.199.34.143",
+  "wg_endpoint_port": "39540",
+  "local_interface": "i-wg-1752",
+  "local_interface_ip": "192.168.50.82",
+  "local_interface_ip_veth": "192.168.50.83",
+  "local_interface_route_table_id": "11583",
+  "local_interface_route_table_name": "rt-wg-1752",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "138.199.34.155",
+  "public_ip_info": {
+    "ip": "138.199.34.155",
+    "hostname": "unn-138-199-34-155.datapacket.com",
+    "city": "Bratislava",
+    "region": "Bratislava Region",
+    "country": "SK",
+    "loc": "48.1838,17.0164",
+    "org": "AS212238 Datacamp Limited",
+    "postal": "841 07",
+    "timezone": "Europe/Bratislava"
+  },
+  "socks5": {
+    "socks5_port": "55842",
+    "socks5_pid": "15661",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.82",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1752.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

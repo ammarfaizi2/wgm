@@ -825,7 +825,7 @@ int wgm_array_iface_add(struct wgm_array_iface *arr, const struct wgm_iface *ifa
 	int ret;
 
 	new_len = arr->len + 1;
-	tmp = realloc(arr->arr, new_len * sizeof(*tmp));
+	tmp = (struct wgm_iface *)realloc(arr->arr, new_len * sizeof(*tmp));
 	if (!tmp)
 		return -ENOMEM;
 

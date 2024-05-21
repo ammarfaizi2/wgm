@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1477",
+  "timestamp_start": "1714646076347",
+  "timestamp_end": "1714646080129",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.129.3",
+  "wg_privkey": "cFkXXvZu27Leiu70loCjjwu2t23cpniV2s0iYbd7jW4=",
+  "wg_pubkey": "HUj/J8Rxx7QVGh3kJsFgPZoqtm2BQIX03vKJSIyTOSo=",
+  "wg_endpoint": "149.102.240.66:34792",
+  "wg_endpoint_ip": "149.102.240.66",
+  "wg_endpoint_port": "34792",
+  "local_interface": "i-wg-1477",
+  "local_interface_ip": "192.168.50.36",
+  "local_interface_ip_veth": "192.168.50.37",
+  "local_interface_route_table_id": "11553",
+  "local_interface_route_table_name": "rt-wg-1477",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "149.102.240.75",
+  "public_ip_info": {
+    "ip": "149.102.240.75",
+    "hostname": "unn-149-102-240-75.datapacket.com",
+    "city": "Kyiv",
+    "region": "Kyiv City",
+    "country": "UA",
+    "loc": "50.4547,30.5238",
+    "org": "AS212238 Datacamp Limited",
+    "postal": "03027",
+    "timezone": "Europe/Kyiv"
+  },
+  "socks5": {
+    "socks5_port": "55819",
+    "socks5_pid": "7841",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.36",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1477.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

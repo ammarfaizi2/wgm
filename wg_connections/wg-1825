@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1825",
+  "timestamp_start": "1714646243429",
+  "timestamp_end": "",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.67.98.198",
+  "wg_privkey": "8LJ08w602svqD6ps+bxl9v3zkOfya3Xdf6I4fhYCDUI=",
+  "wg_pubkey": "TPAIPTgu9jIitgX1Bz5xMCZJ9pRRZTdtZEOIxArO0Hc=",
+  "wg_endpoint": "185.254.75.4:33784",
+  "wg_endpoint_ip": "185.254.75.4",
+  "wg_endpoint_port": "33784",
+  "local_interface": "i-wg-1825",
+  "local_interface_ip": "192.168.50.98",
+  "local_interface_ip_veth": "192.168.50.99",
+  "local_interface_route_table_id": "11591",
+  "local_interface_route_table_name": "rt-wg-1825",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "185.254.75.40",
+  "public_ip_info": {
+    "ip": "185.254.75.40",
+    "hostname": "185.254.75.40.dus.mullvad.net",
+    "city": "Düsseldorf",
+    "region": "North Rhine-Westphalia",
+    "country": "DE",
+    "loc": "51.2217,6.7762",
+    "org": "AS43357 Owl Limited",
+    "postal": "40210",
+    "timezone": "Europe/Berlin"
+  },
+  "socks5": {
+    "socks5_port": "55850",
+    "socks5_pid": "17851",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.98",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1825.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

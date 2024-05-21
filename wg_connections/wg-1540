@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1540",
+  "timestamp_start": "1714646106666",
+  "timestamp_end": "1714646109757",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.66.158.78",
+  "wg_privkey": "gF02dYzobgstr8/fH7Lp882qVne0sxOFeywrcJfAcU0=",
+  "wg_pubkey": "s3N8Xeh6khECbgRYPk9pp5slw2uE0deOxa9rSJ6bzwE=",
+  "wg_endpoint": "146.70.168.66:42291",
+  "wg_endpoint_ip": "146.70.168.66",
+  "wg_endpoint_port": "42291",
+  "local_interface": "i-wg-1540",
+  "local_interface_ip": "192.168.50.50",
+  "local_interface_ip_veth": "192.168.50.51",
+  "local_interface_route_table_id": "11560",
+  "local_interface_route_table_name": "rt-wg-1540",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "146.70.168.108",
+  "public_ip_info": {
+    "ip": "146.70.168.108",
+    "city": "New York City",
+    "region": "New York",
+    "country": "US",
+    "loc": "40.7185,-74.0025",
+    "org": "AS9009 M247 Europe SRL",
+    "postal": "10013",
+    "timezone": "America/New_York"
+  },
+  "socks5": {
+    "socks5_port": "55826",
+    "socks5_pid": "9510",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.50",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1540.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

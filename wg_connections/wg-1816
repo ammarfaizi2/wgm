@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1816",
+  "timestamp_start": "1714646240241",
+  "timestamp_end": "1714646243300",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.70.68.2",
+  "wg_privkey": "eKpZig1fJfhhJFa4SAMY9nPPzJ90bZ7HaKhDHo7ciko=",
+  "wg_pubkey": "L4RcVwk0cJJp2u8O9+86sdyUpxfYnr+ME57Ex0RY1Wo=",
+  "wg_endpoint": "38.240.225.36:37490",
+  "wg_endpoint_ip": "38.240.225.36",
+  "wg_endpoint_port": "37490",
+  "local_interface": "i-wg-1816",
+  "local_interface_ip": "192.168.50.96",
+  "local_interface_ip_veth": "192.168.50.97",
+  "local_interface_route_table_id": "11590",
+  "local_interface_route_table_name": "rt-wg-1816",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "38.240.225.43",
+  "public_ip_info": {
+    "ip": "38.240.225.43",
+    "city": "Calgary",
+    "region": "Alberta",
+    "country": "CA",
+    "loc": "51.0501,-114.0853",
+    "org": "AS394256 Tech Futures Interactive Inc.",
+    "postal": "T3S",
+    "timezone": "America/Edmonton"
+  },
+  "socks5": {
+    "socks5_port": "55849",
+    "socks5_pid": "17719",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.96",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1816.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

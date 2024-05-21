@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1445",
+  "timestamp_start": "1714646065342",
+  "timestamp_end": "1714646068885",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.181.180",
+  "wg_privkey": "wIcO/bCaPw8g+93DU5VXvyIbIvWoLWsZI7c24xqljn8=",
+  "wg_pubkey": "7ncbaCb+9za3jnXlR95I6dJBkwL1ABB5i4ndFUesYxE=",
+  "wg_endpoint": "45.83.220.68:50965",
+  "wg_endpoint_ip": "45.83.220.68",
+  "wg_endpoint_port": "50965",
+  "local_interface": "i-wg-1445",
+  "local_interface_ip": "192.168.50.30",
+  "local_interface_ip_veth": "192.168.50.31",
+  "local_interface_route_table_id": "11550",
+  "local_interface_route_table_name": "rt-wg-1445",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "45.83.220.204",
+  "public_ip_info": {
+    "ip": "45.83.220.204",
+    "city": "Malmö",
+    "region": "Skåne",
+    "country": "SE",
+    "loc": "55.6059,13.0007",
+    "org": "AS39351 31173 Services AB",
+    "postal": "200 01",
+    "timezone": "Europe/Stockholm"
+  },
+  "socks5": {
+    "socks5_port": "55816",
+    "socks5_pid": "7154",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.30",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1445.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1406",
+  "timestamp_start": "1714646047114",
+  "timestamp_end": "1714646050449",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.105.247",
+  "wg_privkey": "gPptTGSEfDOPlfIznPW6ZB352lXtJEqEfknS5FTcfXA=",
+  "wg_pubkey": "mTmrSuXmTnIC9l2Ur3/QgodGrVEhhIE3pRwOHZpiYys=",
+  "wg_endpoint": "185.209.196.77:35585",
+  "wg_endpoint_ip": "185.209.196.77",
+  "wg_endpoint_port": "35585",
+  "local_interface": "i-wg-1406",
+  "local_interface_ip": "192.168.50.20",
+  "local_interface_ip_veth": "192.168.50.21",
+  "local_interface_route_table_id": "11545",
+  "local_interface_route_table_name": "rt-wg-1406",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "185.209.196.232",
+  "public_ip_info": {
+    "ip": "185.209.196.232",
+    "city": "Frankfurt am Main",
+    "region": "Hesse",
+    "country": "DE",
+    "loc": "50.1155,8.6842",
+    "org": "AS39351 31173 Services AB",
+    "postal": "60306",
+    "timezone": "Europe/Berlin"
+  },
+  "socks5": {
+    "socks5_port": "55811",
+    "socks5_pid": "6022",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.20",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1406.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

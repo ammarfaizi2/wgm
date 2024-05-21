@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1680",
+  "timestamp_start": "1714646157921",
+  "timestamp_end": "1714646160427",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.64.76.103",
+  "wg_privkey": "qJlDsSZvNn7+KMei7+V6eBPGb9dje3PdEAS27NK1yGI=",
+  "wg_pubkey": "1H/gj8SVNebAIEGlvMeUVC5Rnf274dfVKbyE+v5G8HA=",
+  "wg_endpoint": "103.216.220.18:51309",
+  "wg_endpoint_ip": "103.216.220.18",
+  "wg_endpoint_port": "51309",
+  "local_interface": "i-wg-1680",
+  "local_interface_ip": "192.168.50.102",
+  "local_interface_ip_veth": "192.168.50.103",
+  "local_interface_route_table_id": "11575",
+  "local_interface_route_table_name": "rt-wg-1680",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "103.216.220.27",
+  "public_ip_info": {
+    "ip": "103.216.220.27",
+    "city": "Brisbane",
+    "region": "Queensland",
+    "country": "AU",
+    "loc": "-27.4679,153.0281",
+    "org": "AS136557 Host Universal Pty Ltd",
+    "postal": "4000",
+    "timezone": "Australia/Brisbane"
+  },
+  "socks5": {
+    "socks5_port": "55852",
+    "socks5_pid": "12906",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.102",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1680.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

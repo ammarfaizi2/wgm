@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1522",
+  "timestamp_start": "1714646100049",
+  "timestamp_end": "1714646103572",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.245.253",
+  "wg_privkey": "QDbVjbOoxUg96WKp63Vys5onS85ZwvOqyhMpjkEdsGc=",
+  "wg_pubkey": "lTq6+yUYfYsXwBpj/u3LnYqpLhW8ZJXQQ19N/ybP2B8=",
+  "wg_endpoint": "154.47.30.143:36802",
+  "wg_endpoint_ip": "154.47.30.143",
+  "wg_endpoint_port": "36802",
+  "local_interface": "i-wg-1522",
+  "local_interface_ip": "192.168.50.46",
+  "local_interface_ip_veth": "192.168.50.47",
+  "local_interface_route_table_id": "11558",
+  "local_interface_route_table_name": "rt-wg-1522",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "154.47.30.145",
+  "public_ip_info": {
+    "ip": "154.47.30.145",
+    "hostname": "unn-154-47-30-145.datapacket.com",
+    "city": "Johannesburg",
+    "region": "Gauteng",
+    "country": "ZA",
+    "loc": "-26.2023,28.0436",
+    "org": "AS212238 Datacamp Limited",
+    "postal": "2041",
+    "timezone": "Africa/Johannesburg"
+  },
+  "socks5": {
+    "socks5_port": "55824",
+    "socks5_pid": "8982",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.46",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1522.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

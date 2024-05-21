@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1779",
+  "timestamp_start": "1714646225165",
+  "timestamp_end": "1714646229301",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.218.87",
+  "wg_privkey": "0LFU/gm+f5PxzP1ex2f1EmMgeD2yvspY2l12VIk+A2o=",
+  "wg_pubkey": "tKUaUnY6dJhRx3zCMAFMa1I7baVt5QrpnmdRsW99MWk=",
+  "wg_endpoint": "198.54.130.82:45174",
+  "wg_endpoint_ip": "198.54.130.82",
+  "wg_endpoint_port": "45174",
+  "local_interface": "i-wg-1779",
+  "local_interface_ip": "192.168.50.88",
+  "local_interface_ip_veth": "192.168.50.89",
+  "local_interface_route_table_id": "11586",
+  "local_interface_route_table_name": "rt-wg-1779",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "198.54.130.94",
+  "public_ip_info": {
+    "ip": "198.54.130.94",
+    "hostname": "static-198-54-130-94.cust.tzulo.com",
+    "city": "Raleigh",
+    "region": "North Carolina",
+    "country": "US",
+    "loc": "35.7721,-78.6386",
+    "org": "AS11878 tzulo, inc.",
+    "postal": "27601",
+    "timezone": "America/New_York"
+  },
+  "socks5": {
+    "socks5_port": "55845",
+    "socks5_pid": "16874",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.88",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1779.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

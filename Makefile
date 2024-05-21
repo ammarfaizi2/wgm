@@ -1,5 +1,6 @@
 
-CFLAGS = -Os -Wall -Wextra -ggdb3 -D_GNU_SOURCE -Wno-unused-parameter
+CFLAGS = -Os -Wall -Wextra -ggdb3 -D_GNU_SOURCE -Wno-unused-parameter -xc
+CXXFLAGS = -Os -Wall -Wextra -ggdb3 -D_GNU_SOURCE -Wno-unused-parameter -xc
 LDFLAGS = -Os
 LDLIBS = -ljson-c
 
@@ -12,21 +13,21 @@ else
 endif
 
 SOURCE_FILES = \
-	src/wgm.c \
-	src/wgm_helpers.c \
-	src/wgm_cmd_iface.c \
-	src/wgm_cmd_peer.c
+	src/wgm.cpp \
+	src/wgm_helpers.cpp \
+	src/wgm_cmd_iface.cpp \
+	src/wgm_cmd_peer.cpp
 
-HEADER_FILES = $(SOURCE_FILES:.c=.h)
-OBJECT_FILES = $(SOURCE_FILES:.c=.o)
+HEADER_FILES = $(SOURCE_FILES:.cpp=.h)
+OBJECT_FILES = $(SOURCE_FILES:.cpp=.o)
 
 all: wgm
 
 wgm: $(OBJECT_FILES)
-	$(CC) $(LDFLAGS) -o $@ $(OBJECT_FILES) $(LDLIBS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJECT_FILES) $(LDLIBS) -xc
 
 %.o: %.c $(HEADER_FILES)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $< -xc
 
 clean:
 	rm -f wgm $(OBJECT_FILES)

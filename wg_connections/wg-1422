@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1422",
+  "timestamp_start": "1714646053947",
+  "timestamp_end": "1714646056265",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.218.65",
+  "wg_privkey": "WL6HqYzUl7SX7moEb/P6IRX2HNi0JpkPhVyBq/rD92M=",
+  "wg_pubkey": "poOHsF6v91yURxDrNe/P/adyNUqsRGzhFIioyBYUPww=",
+  "wg_endpoint": "103.136.147.129:35271",
+  "wg_endpoint_ip": "103.136.147.129",
+  "wg_endpoint_port": "35271",
+  "local_interface": "i-wg-1422",
+  "local_interface_ip": "192.168.50.24",
+  "local_interface_ip_veth": "192.168.50.25",
+  "local_interface_route_table_id": "11547",
+  "local_interface_route_table_name": "rt-wg-1422",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "103.136.147.172",
+  "public_ip_info": {
+    "ip": "103.136.147.172",
+    "hostname": "103.136.147.172.static.po.net",
+    "city": "Sydney",
+    "region": "New South Wales",
+    "country": "AU",
+    "loc": "-33.8678,151.2073",
+    "org": "AS43357 Owl Limited",
+    "postal": "1001",
+    "timezone": "Australia/Sydney"
+  },
+  "socks5": {
+    "socks5_port": "55813",
+    "socks5_pid": "6548",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.24",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1422.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

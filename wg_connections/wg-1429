@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1429",
+  "timestamp_start": "1714646056386",
+  "timestamp_end": "1714646061493",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.17.127",
+  "wg_privkey": "MDApLKx4aX2vaMTx0HHaM4APlMVGMmQPiTdA1ATzMnY=",
+  "wg_pubkey": "xpKhRTf9JI269S2PujLbrJm1TwIe67HD5CLe+sP4tUU=",
+  "wg_endpoint": "146.70.124.130:45330",
+  "wg_endpoint_ip": "146.70.124.130",
+  "wg_endpoint_port": "45330",
+  "local_interface": "i-wg-1429",
+  "local_interface_ip": "192.168.50.26",
+  "local_interface_ip_veth": "192.168.50.27",
+  "local_interface_route_table_id": "11548",
+  "local_interface_route_table_name": "rt-wg-1429",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "146.70.124.150",
+  "public_ip_info": {
+    "ip": "146.70.124.150",
+    "city": "Bucharest",
+    "region": "București",
+    "country": "RO",
+    "loc": "44.4323,26.1063",
+    "org": "AS9009 M247 Europe SRL",
+    "postal": "050011",
+    "timezone": "Europe/Bucharest"
+  },
+  "socks5": {
+    "socks5_port": "55814",
+    "socks5_pid": "6697",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.26",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1429.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

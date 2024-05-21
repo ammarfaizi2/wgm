@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1401",
+  "timestamp_start": "1714646043487",
+  "timestamp_end": "1714646046098",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.64.79.36",
+  "wg_privkey": "sD6L5Ox2PDKFI/Wwc5NecJjfG+F3OHrX1Nrq1n0fVEI=",
+  "wg_pubkey": "ov323GyDOEHLT0sNRUUPYiE3BkvFDjpmi1a4fzv49hE=",
+  "wg_endpoint": "193.32.126.66:51514",
+  "wg_endpoint_ip": "193.32.126.66",
+  "wg_endpoint_port": "51514",
+  "local_interface": "i-wg-1401",
+  "local_interface_ip": "192.168.50.18",
+  "local_interface_ip_veth": "192.168.50.19",
+  "local_interface_route_table_id": "11544",
+  "local_interface_route_table_name": "rt-wg-1401",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "193.32.126.212",
+  "public_ip_info": {
+    "ip": "193.32.126.212",
+    "city": "Paris",
+    "region": "Île-de-France",
+    "country": "FR",
+    "loc": "48.8534,2.3488",
+    "org": "AS39351 31173 Services AB",
+    "postal": "75000",
+    "timezone": "Europe/Paris"
+  },
+  "socks5": {
+    "socks5_port": "55810",
+    "socks5_pid": "5606",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.18",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1401.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

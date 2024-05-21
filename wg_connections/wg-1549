@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1549",
+  "timestamp_start": "1714646109882",
+  "timestamp_end": "1714646112842",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.70.57.25",
+  "wg_privkey": "QIHAshsxZEYSnjXIXb3qB0YsYTaS2+fFlTAS+fYADGA=",
+  "wg_pubkey": "WyzaVvsFivIx7iC+bYbEV5OhtjSw3aqjU5sB3DltQxI=",
+  "wg_endpoint": "199.229.250.55:36768",
+  "wg_endpoint_ip": "199.229.250.55",
+  "wg_endpoint_port": "36768",
+  "local_interface": "i-wg-1549",
+  "local_interface_ip": "192.168.50.52",
+  "local_interface_ip_veth": "192.168.50.53",
+  "local_interface_route_table_id": "11561",
+  "local_interface_route_table_name": "rt-wg-1549",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "192.252.212.30",
+  "public_ip_info": {
+    "ip": "192.252.212.30",
+    "city": "Riverton",
+    "region": "Washington",
+    "country": "US",
+    "loc": "47.4843,-122.2946",
+    "org": "AS46562 Performive LLC",
+    "postal": "98168",
+    "timezone": "America/Los_Angeles"
+  },
+  "socks5": {
+    "socks5_port": "55827",
+    "socks5_pid": "9642",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.52",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1549.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

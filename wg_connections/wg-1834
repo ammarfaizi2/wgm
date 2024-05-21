@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1834",
+  "timestamp_start": "1714646247126",
+  "timestamp_end": "1714646249312",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.240.5",
+  "wg_privkey": "wNs57D0f/H5ccBj37sFY3fExfYNIx2Q2qeyLjPoIXk8=",
+  "wg_pubkey": "hQXsNk/9R2We0pzP1S9J3oNErEu2CyENlwTdmDUYFhg=",
+  "wg_endpoint": "103.108.231.50:47250",
+  "wg_endpoint_ip": "103.108.231.50",
+  "wg_endpoint_port": "47250",
+  "local_interface": "i-wg-1834",
+  "local_interface_ip": "192.168.50.100",
+  "local_interface_ip_veth": "192.168.50.101",
+  "local_interface_route_table_id": "11592",
+  "local_interface_route_table_name": "rt-wg-1834",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "103.108.231.54",
+  "public_ip_info": {
+    "ip": "103.108.231.54",
+    "city": "Perth",
+    "region": "Western Australia",
+    "country": "AU",
+    "loc": "-31.9522,115.8614",
+    "org": "AS136557 Host Universal Pty Ltd",
+    "postal": "6000",
+    "timezone": "Australia/Perth"
+  },
+  "socks5": {
+    "socks5_port": "55851",
+    "socks5_pid": "18078",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.100",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1834.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

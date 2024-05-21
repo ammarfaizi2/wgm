@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1437",
+  "timestamp_start": "1714646061620",
+  "timestamp_end": "1714646065221",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.69.31.65",
+  "wg_privkey": "UMssUeZrIhzRaXMRcYpNc+9Kinna3fpIX9fQlT1zKko=",
+  "wg_pubkey": "iehXacO91FbBqni2IFxedEYPlW2Wvvt9GtRPPPMo9zc=",
+  "wg_endpoint": "146.70.128.226:42810",
+  "wg_endpoint_ip": "146.70.128.226",
+  "wg_endpoint_port": "42810",
+  "local_interface": "i-wg-1437",
+  "local_interface_ip": "192.168.50.28",
+  "local_interface_ip_veth": "192.168.50.29",
+  "local_interface_route_table_id": "11549",
+  "local_interface_route_table_name": "rt-wg-1437",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "146.70.128.238",
+  "public_ip_info": {
+    "ip": "146.70.128.238",
+    "city": "Madrid",
+    "region": "Madrid",
+    "country": "ES",
+    "loc": "40.4305,-3.6232",
+    "org": "AS9009 M247 Europe SRL",
+    "postal": "28037",
+    "timezone": "Europe/Madrid"
+  },
+  "socks5": {
+    "socks5_port": "55815",
+    "socks5_pid": "6925",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.28",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1437.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

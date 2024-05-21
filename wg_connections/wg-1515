@@ -1,0 +1,43 @@
+{
+  "vpn_id": "wg-1515",
+  "timestamp_start": "",
+  "timestamp_end": "1714646100364",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.70.33.102",
+  "wg_privkey": "iCgiOqEagz5jEIaDHXs3yg2DKFo1KCD2z6UrDQ5cmUs=",
+  "wg_pubkey": "hRamkTwXw0usPFDorPl2vf1qP8chczEBcqeV5bA1QDA=",
+  "wg_endpoint": "149.88.22.155:51421",
+  "wg_endpoint_ip": "149.88.22.155",
+  "wg_endpoint_port": "51421",
+  "local_interface": "i-wg-1515",
+  "local_interface_ip": "192.168.50.44",
+  "local_interface_ip_veth": "192.168.50.45",
+  "local_interface_route_table_id": "11557",
+  "local_interface_route_table_name": "rt-wg-1515",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "149.88.22.160",
+  "public_ip_info": {
+    "ip": "149.88.22.160",
+    "hostname": "unn-149-88-22-160.datapacket.com",
+    "city": "Santiago de Querétaro",
+    "region": "Querétaro",
+    "country": "MX",
+    "loc": "20.5881,-100.3881",
+    "org": "AS212238 Datacamp Limited",
+    "postal": "76120",
+    "timezone": "America/Mexico_City"
+  },
+  "socks5": {
+    "socks5_port": "55823",
+    "socks5_pid": "8753",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.44",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1515.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

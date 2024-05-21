@@ -1,0 +1,41 @@
+{
+  "vpn_id": "wg-1357",
+  "timestamp_start": "1714646020824",
+  "timestamp_end": "1714646023000",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.64.89.247",
+  "wg_privkey": "mJsXYvn10EGtDxOtljnlXQKY3fZMMPDjZM23wSfkY3A=",
+  "wg_pubkey": "qbvU06SBHXnqMnpb49rnE0yC4AOWQcWl2bEScu18dh8=",
+  "wg_endpoint": "146.70.224.2:37178",
+  "wg_endpoint_ip": "146.70.224.2",
+  "wg_endpoint_port": "37178",
+  "local_interface": "i-wg-1357",
+  "local_interface_ip": "192.168.50.4",
+  "local_interface_ip_veth": "192.168.50.5",
+  "local_interface_route_table_id": "11537",
+  "local_interface_route_table_name": "rt-wg-1357",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "146.70.224.22",
+  "public_ip_info": {
+    "ip": "146.70.224.22",
+    "city": "Hong Kong",
+    "region": "Hong Kong",
+    "country": "HK",
+    "loc": "22.2783,114.1747",
+    "org": "AS9009 M247 Europe SRL",
+    "timezone": "Asia/Hong_Kong"
+  },
+  "socks5": {
+    "socks5_port": "55803",
+    "socks5_pid": "3899",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.4",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1357.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}

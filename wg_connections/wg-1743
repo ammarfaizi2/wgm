@@ -1,0 +1,42 @@
+{
+  "vpn_id": "wg-1743",
+  "timestamp_start": "1714646211113",
+  "timestamp_end": "1714646214752",
+  "server_ip": "23.108.99.48",
+  "wg_mtu": "1390",
+  "wg_keepalive": "25",
+  "wg_interface_ip": "10.67.232.77",
+  "wg_privkey": "cDeYA9+7zjPrC39eyiqgGoUjuRFH0GXgvH2ZH1i8LHo=",
+  "wg_pubkey": "z0gUPGRwzmOcFLU6b2Z3dCJUJr2/9OvxujUbjFSTB0Q=",
+  "wg_endpoint": "31.170.22.15:38911",
+  "wg_endpoint_ip": "31.170.22.15",
+  "wg_endpoint_port": "38911",
+  "local_interface": "i-wg-1743",
+  "local_interface_ip": "192.168.50.80",
+  "local_interface_ip_veth": "192.168.50.81",
+  "local_interface_route_table_id": "11582",
+  "local_interface_route_table_name": "rt-wg-1743",
+  "dns": "1.1.1.1",
+  "public_ip_test_url": "http://checkip.amazonaws.com",
+  "public_ip": "31.170.22.23",
+  "public_ip_info": {
+    "ip": "31.170.22.23",
+    "city": "Riga",
+    "region": "Riga",
+    "country": "LV",
+    "loc": "56.9460,24.1059",
+    "org": "AS43513 Sia Nano IT",
+    "postal": "LV-1001",
+    "timezone": "Europe/Riga"
+  },
+  "socks5": {
+    "socks5_port": "55841",
+    "socks5_pid": "15433",
+    "socks5_listen_address": "0.0.0.0",
+    "socks5_bind_address": "192.168.50.80",
+    "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1743.conf",
+    "socks5_auth_path": "/home/server/socks5/server/auth/socks_auth",
+    "socks5_server_path": "/home/server/socks5/server/bin/socks5"
+  },
+  "speedtest": false
+}
