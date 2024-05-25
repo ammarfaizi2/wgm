@@ -16,12 +16,22 @@ wgmd_ctx::wgmd_ctx(const std::string &config_file_path,
 
 void wgmd_ctx::load_config(void)
 {
-	config_file_ = std::make_unique<file_t>(config_file_path_);
-	config_ = config_file_->get_json();
+	size_t i;
 
-	for (const auto &server : config_["servers"])
-		servers_.emplace(server["location"].get<std::string>(),
-				 server_config_t(server));
+	config_file_ = std::make_unique<file_t>(config_file_path_);
+	json servers = config_file_->get_json();
+
+	for (i = 0; i < servers.size(); i++) {
+		try {
+			const json &s = servers.at(i);
+			server_config_t cfg(s);
+
+			servers_.emplace(cfg.location, cfg);
+		} catch (const std::exception &e) {
+			pr_warn("Failed to parse server config at index %zu: %s, skipping...\n",
+				i, e.what());
+		}
+	}
 }
 
 wgmd_ctx::~wgmd_ctx(void) = default;

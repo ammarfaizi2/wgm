@@ -13,16 +13,21 @@ server_config::server_config(const std::string &json_str)
 
 server_config::server_config(const json &j)
 {
-	location	= j.at("location").get<std::string>();
-	country		= j.at("country").get<std::string>();
-	city		= j.at("city").get<std::string>();
-	local_ip	= j.at("local_ip").get<std::string>();
-	socks5_port	= j.at("socks5_port").get<uint16_t>();
-	wireguard_port	= j.at("wireguard_port").get<uint16_t>();
-	private_key	= j.at("private_key").get<std::string>();
-	public_key	= j.at("public_key").get<std::string>();
-	preshared_key	= j.at("preshared_key").get<std::string>();
-	gateway_ip	= j.at("gateway_ip").get<std::string>();
+	location	= j.at("Location").get<std::string>();
+	country		= j.at("Country").get<std::string>();
+	city		= j.at("City").get<std::string>();
+	local_ip	= j.at("LocalIP").get<std::string>();
+	socks5_port	= j.at("Socks5Port").get<uint16_t>();
+	wireguard_port	= j.at("WireguardPort").get<uint16_t>();
+	private_key	= j.at("PrivateKey").get<std::string>();
+	public_key	= j.at("PublicKey").get<std::string>();
+	preshared_key	= j.at("PresharedKey").get<std::string>();
+
+	try {
+		gateway_ip	= j.at("GatewayIp").get<std::string>();
+	} catch (json::out_of_range &e) {
+		gateway_ip = "";
+	}
 }
 
 server_config::~server_config(void) = default;

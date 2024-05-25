@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <cstdio>
 #include <unordered_map>
 
 #include <wgm/helpers.hpp>
@@ -19,7 +20,6 @@ private:
 	std::string config_file_path_;
 	std::string client_cfg_dir_;
 	std::unique_ptr<file_t> config_file_;
-	json config_;
 
 	std::unordered_map<std::string, server_config_t> servers_;
 
@@ -31,6 +31,10 @@ public:
 
 	~wgmd_ctx(void);
 };
+
+#ifndef pr_warn
+#define pr_warn(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+#endif
 
 } /* namespace wgm */
 
