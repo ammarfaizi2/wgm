@@ -2,16 +2,28 @@
 #ifndef WGM__WGMD_HPP
 #define WGM__WGMD_HPP
 
-#include <nlohmann/json.hpp>
+#include <memory>
+#include <string>
+#include <unordered_map>
+
+#include <wgm/helpers.hpp>
+#include <wgm/server_config.hpp>
 
 namespace wgm {
 
 class wgmd_ctx {
 private:
+
+	using json = nlohmann::json;
+
 	std::string config_file_path_;
 	std::string client_cfg_dir_;
+	std::unique_ptr<file_t> config_file_;
+	json config_;
 
-	void load_config(void);
+	std::unordered_map<std::string, server_config_t> servers_;
+
+	inline void load_config(void);
 
 public:
 	wgmd_ctx(const std::string &config_file_path,
