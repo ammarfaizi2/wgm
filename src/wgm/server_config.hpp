@@ -2,15 +2,18 @@
 #ifndef WGM__SERVER_HPP
 #define WGM__SERVER_HPP
 
+#include <mutex>
 #include <memory>
 #include <string>
 #include <unordered_map>
 
 #include <wgm/helpers.hpp>
+#include <wgm/client_config.hpp>
 
 namespace wgm {
 
 struct server_config {
+public:
 	std::string location;
 	std::string country;
 	std::string city;
@@ -27,6 +30,13 @@ struct server_config {
 	server_config(const std::string &json_str);
 	server_config(const json &json_obj);
 	~server_config(void);
+
+	void add_client(const client_config_t &client);
+	std::shared_ptr<client_config_t> find_client(const std::string &wireguard_id);
+
+private:
+	std::unordered_map<std::string, std::shared_ptr<client_config_t>> clients;
+	std::mutex clients_mutex;
 };
 
 typedef server_config server_config_t;

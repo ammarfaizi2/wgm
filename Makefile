@@ -14,6 +14,7 @@ LIBS      = -lpthread
 WGMD_SOURCES = \
 	$(SRC_DIR)/wgm/wgmd.cpp \
 	$(SRC_DIR)/wgm/wgmd_ctx.cpp \
+	$(SRC_DIR)/wgm/client_config.cpp \
 	$(SRC_DIR)/wgm/server_config.cpp \
 	$(SRC_DIR)/wgm/helpers.cpp \
 	$(SRC_DIR)/wgm/helpers/file_handle.cpp

@@ -24,6 +24,7 @@ private:
 	std::unordered_map<std::string, server_config_t> servers_;
 
 	inline void load_config(void);
+	inline void load_clients(void);
 
 public:
 	wgmd_ctx(const std::string &config_file_path,
