@@ -27,6 +27,8 @@ public:
 	inline const std::string &WireguardID(void) const { return WireguardID_; }
 	inline const std::string &LocationRelay(void) const { return LocationRelay_; }
 	inline const std::string &LocationExit(void) const { return LocationExit_; }
+	inline const std::string &PublicKey(void) const { return PublicKey_; }
+	inline const std::string &LocalIP(void) const { return LocalIP_; }
 	inline bool Expired(void) const { return Expired_; }
 };
 

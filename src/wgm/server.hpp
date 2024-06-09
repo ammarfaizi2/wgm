@@ -35,6 +35,9 @@ public:
 	server(const json &j);
 	~server(void);
 	void add_client(const client &c);
+	std::string gen_wg_config(void);
+
+	inline size_t num_clients(void) const { return clients_.size(); }
 
 	inline const std::string &IPRelay(void) const { return IPRelay_; }
 	inline const std::string &LocationRelay(void) const { return LocationRelay_; }

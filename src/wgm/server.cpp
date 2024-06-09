@@ -28,4 +28,27 @@ void server::add_client(const client &c)
 	clients_.emplace(c.WireguardID(), c);
 }
 
+std::string server::gen_wg_config(void)
+{
+	std::string ret = "";
+
+	ret += "[Interface]\n";
+	ret += "MTU = " + std::to_string(MTU_) + "\n";
+	ret += "PrivateKey = " + PrivateKey_ + "\n";
+	ret += "Table = off\n";
+	ret += "Address = " + WireguardSubnet_ + "\n";
+	ret += "ListenPort = " + std::to_string(WireguardPort_) + "\n";
+	ret += "\n";
+
+	for (const auto &i : clients_) {
+		ret += "[Peer]\n";
+		ret += "PresharedKey = " + PresharedKey_ + "\n";
+		ret += "PublicKey = " + i.second.PublicKey() + "\n";
+		ret += "AllowedIPs = " + i.second.LocalIP() + "/32\n";
+		ret += "\n";
+	}
+
+	return ret;
+}
+
 } /* namespace wgm */

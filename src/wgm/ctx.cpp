@@ -70,6 +70,20 @@ void ctx::load_all(void)
 
 int ctx::run(void)
 {
+
+	for (auto &i : servers_) {
+		server &s = i.second;
+
+		if (s.num_clients() == 0) {
+			pr_warn("No clients for server: %s\n", s.Location().c_str());
+			continue;
+		}
+
+		std::string wg_cfg = s.gen_wg_config();
+
+		printf("Writing Wireguard config file:\n%s\n", wg_cfg.c_str());
+	}
+
 	return 0;
 }
 
