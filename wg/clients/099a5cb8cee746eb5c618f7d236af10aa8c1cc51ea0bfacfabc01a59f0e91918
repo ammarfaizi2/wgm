@@ -1,0 +1,8 @@
+{
+    "WireguardID": "099a5cb8cee746eb5c618f7d236af10aa8c1cc51ea0bfacfabc01a59f0e91918",
+    "LocationRelay": "jp-tok",
+    "LocationExit": "be-bru",
+    "PublicKey": "NkMYPHyL6feSvBafat2tSQT2F3VhEi2hTZFRzn5uv14=",
+    "LocalIP": "10.162.105.243",
+    "Expired": false
+}

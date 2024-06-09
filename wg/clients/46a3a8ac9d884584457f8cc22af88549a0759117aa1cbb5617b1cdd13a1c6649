@@ -1,0 +1,8 @@
+{
+    "WireguardID": "46a3a8ac9d884584457f8cc22af88549a0759117aa1cbb5617b1cdd13a1c6649",
+    "LocationRelay": "de-ise",
+    "LocationExit": "au-syd",
+    "PublicKey": "X1rmBXR0g8qbrAxH5db3ytJoF34h6e7zWefUqvqJLCI=",
+    "LocalIP": "10.5.0.2",
+    "Expired": false
+}

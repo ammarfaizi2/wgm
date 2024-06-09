@@ -1,0 +1,8 @@
+{
+    "WireguardID": "06ab4a42ade9d022f19ebc66b4c03634b2ce720226a2071ef93eb5839fdfbd20",
+    "LocationRelay": "sg-sin",
+    "LocationExit": "co-bog",
+    "PublicKey": "2XeyIMAK+Vf1kkzssqb4x6Kj7VR+tVbX47wEpBzlDwU=",
+    "LocalIP": "10.20.0.2",
+    "Expired": false
+}

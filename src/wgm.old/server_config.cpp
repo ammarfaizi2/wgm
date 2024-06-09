@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 #include <wgm/server_config.hpp>
+#include <iostream>
 
 namespace wgm {
 
@@ -53,6 +54,20 @@ std::shared_ptr<client_config_t> server_config::find_client(const std::string &w
 		return nullptr;
 
 	return it->second;
+}
+
+void server_config::dump(void) const
+{
+	std::cout << "Location: " << location << std::endl;
+	std::cout << "Country: " << country << std::endl;
+	std::cout << "City: " << city << std::endl;
+	std::cout << "LocalIP: " << local_ip << std::endl;
+	std::cout << "Socks5Port: " << socks5_port << std::endl;
+	std::cout << "WireguardPort: " << wireguard_port << std::endl;
+	std::cout << "PrivateKey: " << private_key << std::endl;
+	std::cout << "PublicKey: " << public_key << std::endl;
+	std::cout << "PresharedKey: " << preshared_key << std::endl;
+	std::cout << "GatewayIp: " << gateway_ip << std::endl;
 }
 
 } /* namespace wgm */

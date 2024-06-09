@@ -33,6 +33,7 @@ public:
 
 	void add_client(const client_config_t &client);
 	std::shared_ptr<client_config_t> find_client(const std::string &wireguard_id);
+	void dump(void) const;
 
 private:
 	std::unordered_map<std::string, std::shared_ptr<client_config_t>> clients;

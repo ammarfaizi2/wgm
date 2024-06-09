@@ -31,6 +31,8 @@ public:
 		 const std::string &client_cfg_dir);
 
 	~wgmd_ctx(void);
+
+	void dump(void) const;
 };
 
 #ifndef pr_warn

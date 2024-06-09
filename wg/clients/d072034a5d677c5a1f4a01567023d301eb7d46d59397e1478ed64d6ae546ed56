@@ -1,0 +1,8 @@
+{
+    "WireguardID": "d072034a5d677c5a1f4a01567023d301eb7d46d59397e1478ed64d6ae546ed56",
+    "LocationRelay": "jp-tok",
+    "LocationExit": "co-bog",
+    "PublicKey": "lc2gDn7KDYxss1GM3siG1GN0H2pVp3k4b7Q1XNp8CwA=",
+    "LocalIP": "10.20.0.2",
+    "Expired": false
+}

@@ -1,7 +1,7 @@
 {
   "vpn_id": "wg-1761",
-  "timestamp_start": "1714646218550",
-  "timestamp_end": "1714646221968",
+  "timestamp_start": "",
+  "timestamp_end": "1717686486293",
   "server_ip": "23.108.99.48",
   "wg_mtu": "1390",
   "wg_keepalive": "25",
@@ -14,7 +14,7 @@
   "local_interface": "i-wg-1761",
   "local_interface_ip": "192.168.50.84",
   "local_interface_ip_veth": "192.168.50.85",
-  "local_interface_route_table_id": "11584",
+  "local_interface_route_table_id": "11864",
   "local_interface_route_table_name": "rt-wg-1761",
   "dns": "1.1.1.1",
   "public_ip_test_url": "http://checkip.amazonaws.com",
@@ -31,7 +31,7 @@
   },
   "socks5": {
     "socks5_port": "55843",
-    "socks5_pid": "15900",
+    "socks5_pid": "14002",
     "socks5_listen_address": "0.0.0.0",
     "socks5_bind_address": "192.168.50.84",
     "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1761.conf",

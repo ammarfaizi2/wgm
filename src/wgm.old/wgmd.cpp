@@ -13,6 +13,7 @@ static void run_wgmd(int argc, char *argv[])
 	(void)argv;
 
 	wgmd_ctx ctx("./wg/config.json", "./wg/clients");
+	ctx.dump();
 }
 
 int main(int argc, char *argv[])

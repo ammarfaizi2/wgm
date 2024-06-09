@@ -1,7 +1,7 @@
 {
   "vpn_id": "wg-1680",
-  "timestamp_start": "1714646157921",
-  "timestamp_end": "1714646160427",
+  "timestamp_start": "1717686449876",
+  "timestamp_end": "1717686452346",
   "server_ip": "23.108.99.48",
   "wg_mtu": "1390",
   "wg_keepalive": "25",
@@ -14,7 +14,7 @@
   "local_interface": "i-wg-1680",
   "local_interface_ip": "192.168.50.102",
   "local_interface_ip_veth": "192.168.50.103",
-  "local_interface_route_table_id": "11575",
+  "local_interface_route_table_id": "11855",
   "local_interface_route_table_name": "rt-wg-1680",
   "dns": "1.1.1.1",
   "public_ip_test_url": "http://checkip.amazonaws.com",
@@ -31,7 +31,7 @@
   },
   "socks5": {
     "socks5_port": "55852",
-    "socks5_pid": "12906",
+    "socks5_pid": "11969",
     "socks5_listen_address": "0.0.0.0",
     "socks5_bind_address": "192.168.50.102",
     "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1680.conf",

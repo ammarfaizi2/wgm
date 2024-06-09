@@ -23,12 +23,25 @@ void wgmd_ctx::load_config(void)
 	for (i = 0; i < servers.size(); i++) {
 		try {
 			const json &s = servers.at(i);
-			server_config_t cfg(s);
+			const std::string location = s.at("Location");
 
-			servers_.emplace(cfg.location, cfg);
+			if (servers_.find(location) != servers_.end()) {
+				pr_warn("Duplicate server config at index %zu, skipping...\n", i);
+				continue;
+			}
+
+			servers_.emplace(location, s);
 		} catch (const std::exception &e) {
 			pr_warn("Failed to parse server config at index %zu: %s, skipping...\n", i, e.what());
 		}
+	}
+}
+
+void wgmd_ctx::dump(void) const
+{
+	for (const auto &s : servers_) {
+		std::cout << s.first << std::endl;
+		s.second.dump();
 	}
 }
 

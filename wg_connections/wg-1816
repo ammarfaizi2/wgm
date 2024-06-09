@@ -1,7 +1,7 @@
 {
   "vpn_id": "wg-1816",
-  "timestamp_start": "1714646240241",
-  "timestamp_end": "1714646243300",
+  "timestamp_start": "1717686505386",
+  "timestamp_end": "1717686508716",
   "server_ip": "23.108.99.48",
   "wg_mtu": "1390",
   "wg_keepalive": "25",
@@ -14,7 +14,7 @@
   "local_interface": "i-wg-1816",
   "local_interface_ip": "192.168.50.96",
   "local_interface_ip_veth": "192.168.50.97",
-  "local_interface_route_table_id": "11590",
+  "local_interface_route_table_id": "11870",
   "local_interface_route_table_name": "rt-wg-1816",
   "dns": "1.1.1.1",
   "public_ip_test_url": "http://checkip.amazonaws.com",
@@ -31,7 +31,7 @@
   },
   "socks5": {
     "socks5_port": "55849",
-    "socks5_pid": "17719",
+    "socks5_pid": "15335",
     "socks5_listen_address": "0.0.0.0",
     "socks5_bind_address": "192.168.50.96",
     "socks5_config_path": "/home/server/socks5/server/configs//socks-wg-1816.conf",

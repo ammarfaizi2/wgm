@@ -1,0 +1,8 @@
+{
+    "WireguardID": "e21bbc8e96714c8217dfbdaef75cd71f2bc9b18b5fe745256dba69ab51d3c823",
+    "LocationRelay": "au-syd",
+    "LocationExit": "al-tir",
+    "PublicKey": "ysgXkdNJET0HswVVJDCGNOnmyZDLlDAsp4Ief60EvQQ=",
+    "LocalIP": "10.40.0.2",
+    "Expired": false
+}
