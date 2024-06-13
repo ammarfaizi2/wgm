@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 #include <wgm/server.hpp>
+#include <wgm/ctx.hpp>
 #include <cstdio>
 
 namespace wgm {
 
-server::server(const json &j)
+using json = nlohmann::json;
+
+server::server(const json &j, ctx *ctx):
+	ctx_(ctx)
 {
 	IPRelay_		= j["IPRelay"];
 	LocationRelay_		= j["LocationRelay"];
@@ -32,12 +36,25 @@ void server::add_client(const client &c)
 std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
 				  std::string true_path)
 {
+	std::string def_gateway;
+	std::string rt_table;
+
 	std::string ret = "";
 	uint64_t mss_lb = MTU_ - 39;
 	uint64_t mss_ub = 65535;
 	uint64_t target_mss = MTU_ - 40;
 	size_t i = 0;
 	uint32_t mark = 7777;
+	
+	try {
+		json j = ctx_->get_wg_conn_by_local_interface_ip(LocalIP_);
+
+		rt_table = j["local_interface_route_table_name"];
+		def_gateway = j["local_interface_ip_veth"];
+	} catch (const std::exception &e) {
+		throw std::runtime_error("Failed to get Wireguard connection file: " + std::string(e.what()));
+	}
+
 
 	ret += "[Interface]\n";
 	ret += "# PublicKey = " + PublicKey_ + "\n";
@@ -66,8 +83,9 @@ std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
 
 	ret += "\n";
 	ret += "### Start iproute2 rules. ###\n";
-	ret += "PostUp   = " + ip2_path + " rule add fwmark " + std::to_string(mark) + " table " + std::to_string(mark) + ";\n";
-	ret += "PostUp   = " + ip2_path + " route replace default via " + LocalIP_ + " table " + std::to_string(mark) + ";\n";
+	ret += "PostUp   = " + ip2_path + " rule add fwmark " + std::to_string(mark) + " table " + rt_table + ";\n";
+	// ret += "PostUp   = " + ip2_path + " rule add fwmark " + std::to_string(mark) + " table " + std::to_string(mark) + ";\n";
+	// ret += "PostUp   = " + ip2_path + " route replace default via " + def_gateway + " table " + std::to_string(mark) + ";\n";
 	ret += "### End iproute2 rules. ###\n\n";
 
 	ret += "### Start iptables rules. ###\n";
@@ -100,7 +118,8 @@ std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
 	ret += "PostDown = (" + ipt_path + " -t filter -X wgm_mssc_" + Location_ + " || " + true_path + ") >> /dev/null 2>&1;\n";
 	ret += "PostDown = (" + ipt_path + " -t nat    -X wgm_" + Location_ + " || " + true_path + ") >> /dev/null 2>&1;\n";
 	ret += "PostDown = (" + ipt_path + " -t mangle -X wgm_" + Location_ + " || " + true_path + ") >> /dev/null 2>&1;\n";
-	ret += "PostDown = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + std::to_string(mark) + " || " + true_path + ") >> /dev/null 2>&1;\n";
+	// ret += "PostDown = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + std::to_string(mark) + " || " + true_path + ") >> /dev/null 2>&1;\n";
+	ret += "PostDown = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + rt_table + " || " + true_path + ") >> /dev/null 2>&1;\n";
 	ret += "\n";
 
 	// ret += "PostUp   = " + ipt_path + " -t nat -A POSTROUTING -s " + WireguardSubnet_ + " ! -d " + WireguardSubnet_ + " -j MASQUERADE\n";

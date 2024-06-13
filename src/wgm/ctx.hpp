@@ -22,12 +22,20 @@ private:
 	void load_clients(void);
 
 public:
+	using json = nlohmann::json;
+
 	ctx(const char *cfg_file, const char *client_cfg_dir,
 	    const char *wg_conn_dir);
 
 	~ctx(void);
 
 	int run(void);
+
+	const std::string &cfg_file(void) const { return cfg_file_; }
+	const std::string &client_cfg_dir(void) const { return client_cfg_dir_; }
+	const std::string &wg_conn_dir(void) const { return wg_conn_dir_; }
+
+	json get_wg_conn_by_local_interface_ip(const std::string &ip);
 };
 
 } /* namespace wgm */

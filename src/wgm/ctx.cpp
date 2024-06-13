@@ -21,6 +21,25 @@ ctx::ctx(const char *cfg_file, const char *client_cfg_dir,
 
 ctx::~ctx(void) = default;
 
+json ctx::get_wg_conn_by_local_interface_ip(const std::string &ip)
+{
+	std::vector<std::string> files = scandir(wg_conn_dir_.c_str(), true);
+
+	for (const std::string &f : files) {
+		try {
+			json j = load_json_from_file(std::string(wg_conn_dir_ + "/" + f).c_str());
+
+			if (j["local_interface_ip"] == ip)
+				return j;
+
+		} catch (const std::exception &e) {
+			pr_warn("Failed to load Wireguard connection file: %s\n", e.what());
+		}
+	}
+
+	throw std::runtime_error("No Wireguard connection file found for IP: " + ip);
+}
+
 inline void ctx::load_servers(void)
 {
 	json j = load_json_from_file(cfg_file_.c_str());
@@ -33,8 +52,12 @@ inline void ctx::load_servers(void)
 	servers_.clear();
 
 	for (const auto &i : j) {
-		server s(i);
-		servers_.emplace(s.Location(), s);
+		try {
+			server s(i, this);
+			servers_.emplace(s.Location(), s);
+		} catch (const std::exception &e) {
+			pr_warn("Failed to load server config: %s\n", e.what());
+		}
 	}
 }
 

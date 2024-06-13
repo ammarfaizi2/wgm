@@ -11,6 +11,8 @@
 
 namespace wgm {
 
+class ctx;
+
 class server {
 private:
 	std::string IPRelay_;
@@ -29,10 +31,11 @@ private:
 
 	std::unordered_map<std::string, client> clients_;
 
+	ctx *ctx_;
 public:
 	using json = nlohmann::json;
 
-	server(const json &j);
+	server(const json &j, ctx *ctx);
 	~server(void);
 	void add_client(const client &c);
 	std::string gen_wg_config(
