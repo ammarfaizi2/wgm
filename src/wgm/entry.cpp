@@ -15,9 +15,9 @@
 #include <dirent.h>
 
 static int run_wgm(const char *cfg_file, const char *client_cfg_dir,
-		   const char *wg_conn_dir)
+		   const char *wg_conn_dir, const char *wg_dir)
 {
-	wgm::ctx ctx(cfg_file, client_cfg_dir, wg_conn_dir);
+	wgm::ctx ctx(cfg_file, client_cfg_dir, wg_conn_dir, wg_dir);
 	return ctx.run();
 }
 
@@ -26,10 +26,11 @@ int main(int argc, char *argv[])
 	static const char *cfg_file = "./wg/config.json";
 	static const char *client_cfg_dir = "./wg/clients";
 	static const char *wg_conn_dir = "./wg_connections";
+	static const char *wg_dir = "/etc/wireguard";
 
 	(void)argc;
 	(void)argv;
-	return run_wgm(cfg_file, client_cfg_dir, wg_conn_dir);
+	return run_wgm(cfg_file, client_cfg_dir, wg_conn_dir, wg_dir);
 }
 
 namespace wgm {
@@ -71,6 +72,26 @@ nlohmann::json load_json_from_file(const char *file)
 {
 	std::string str = load_str_from_file(file);
 	return nlohmann::json::parse(str);
+}
+
+void store_str_to_file(const char *file, const std::string &str)
+{
+	char tmp[4096];
+	FILE *f;
+
+	f = fopen(file, "wb");
+	if (!f) {
+		snprintf(tmp, sizeof(tmp), "Failed to open file: '%s': %s\n", file, strerror(errno));
+		throw std::runtime_error(std::string(tmp));
+	}
+
+	if (fwrite(str.c_str(), 1, str.size(), f) != str.size()) {
+		fclose(f);
+		snprintf(tmp, sizeof(tmp), "Failed to write to file: '%s': %s\n", file, strerror(errno));
+		throw std::runtime_error(std::string(tmp));
+	}
+
+	fclose(f);
 }
 
 std::vector<std::string> scandir(const char *dir, bool skip_dot_files)

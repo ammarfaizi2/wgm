@@ -4,6 +4,7 @@
 #include <wgm/ctx.hpp>
 
 #include <stdexcept>
+#include <cstdlib>
 #include <cctype>
 
 namespace wgm {
@@ -11,10 +12,11 @@ namespace wgm {
 using json = nlohmann::json;
 
 ctx::ctx(const char *cfg_file, const char *client_cfg_dir,
-	 const char *wg_conn_dir):
+	 const char *wg_conn_dir, const char *wg_dir):
 	cfg_file_(cfg_file),
 	client_cfg_dir_(client_cfg_dir),
-	wg_conn_dir_(wg_conn_dir)
+	wg_conn_dir_(wg_conn_dir),
+	wg_dir_(wg_dir)
 {
 	load_all();
 }
@@ -116,9 +118,37 @@ int ctx::run(void)
 			continue;
 		}
 
-		std::string wg_cfg = s.gen_wg_config();
+		std::string cfg_name = "wgm-" + s.Location();
+		std::string cfg_path = wg_dir_ + "/" + cfg_name + ".conf";
+		std::string new_cfg = s.gen_wg_config();
+		std::string old_cfg = "";
 
-		printf("Writing Wireguard config file:\n%s\n", wg_cfg.c_str());
+		try {
+			old_cfg = load_str_from_file(cfg_path.c_str());
+		} catch (const std::exception &e) {
+			old_cfg = "";
+		}
+
+		if (old_cfg == new_cfg) {
+			pr_debug("No changes for server: %s\n", s.Location().c_str());
+			continue;
+		}
+
+		try {
+			int err = 0;
+
+			store_str_to_file(cfg_path.c_str(), new_cfg);
+			pr_debug("Updated server config: %s\n", s.Location().c_str());
+
+			std::string dw_cmd = "/usr/bin/wg-quick down " + cfg_name;
+			std::string up_cmd = "/usr/bin/wg-quick up " + cfg_name;
+
+			err |= system(dw_cmd.c_str());
+			err |= system(up_cmd.c_str());
+			(void)err;
+		} catch (const std::exception &e) {
+			pr_warn("Failed to update server config: %s: %s\n", s.Location().c_str(), e.what());
+		}
 	}
 
 	return 0;

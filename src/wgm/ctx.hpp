@@ -14,6 +14,7 @@ private:
 	std::string cfg_file_;
 	std::string client_cfg_dir_;
 	std::string wg_conn_dir_;
+	std::string wg_dir_;
 
 	std::unordered_map<std::string, server> servers_;
 
@@ -25,7 +26,7 @@ public:
 	using json = nlohmann::json;
 
 	ctx(const char *cfg_file, const char *client_cfg_dir,
-	    const char *wg_conn_dir);
+	    const char *wg_conn_dir, const char *wg_dir);
 
 	~ctx(void);
 

@@ -9,6 +9,7 @@ namespace wgm {
 std::string load_str_from_file(const char *file);
 nlohmann::json load_json_from_file(const char *file);
 std::vector<std::string> scandir(const char *dir, bool skip_dot_files = false);
+void store_str_to_file(const char *file, const std::string &str);
 void pr_warn(const char *fmt, ...);
 void pr_debug(const char *fmt, ...);
 
