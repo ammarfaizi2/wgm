@@ -122,13 +122,6 @@ std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
 	ret += "PostDown = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + rt_table + " || " + true_path + ") >> /dev/null 2>&1;\n";
 	ret += "\n";
 
-	// ret += "PostUp   = " + ipt_path + " -t nat -A POSTROUTING -s " + WireguardSubnet_ + " ! -d " + WireguardSubnet_ + " -j MASQUERADE\n";
-
-	// for (const auto &i : clients_) {
-	// 	ret += "PostUp   = iptables -t nat -A POSTROUTING -s " + WireguardSubnet_ + " ! -d " + WireguardSubnet_ + " -j MASQUERADE\n";
-	// 	ret += "PostDown = ";
-	// }
-
 	ret += "\n\n";
 	for (const auto &i : clients_) {
 		ret += "# " + i.first + "\n";
