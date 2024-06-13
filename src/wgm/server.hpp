@@ -35,7 +35,11 @@ public:
 	server(const json &j);
 	~server(void);
 	void add_client(const client &c);
-	std::string gen_wg_config(void);
+	std::string gen_wg_config(
+		std::string ipt_path  = "/usr/sbin/iptables",
+		std::string ip2_path  = "/usr/sbin/ip",
+		std::string true_path = "/usr/bin/true"
+	);
 
 	inline size_t num_clients(void) const { return clients_.size(); }
 

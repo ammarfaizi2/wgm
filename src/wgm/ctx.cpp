@@ -4,6 +4,7 @@
 #include <wgm/ctx.hpp>
 
 #include <stdexcept>
+#include <cctype>
 
 namespace wgm {
 
@@ -37,11 +38,24 @@ inline void ctx::load_servers(void)
 	}
 }
 
+static inline bool is_str_hex(const std::string &s)
+{
+	for (const char &c : s) {
+		if (!std::isxdigit(c))
+			return false;
+	}
+
+	return true;
+}
+
 inline void ctx::load_clients(void)
 {
 	std::vector<std::string> files = scandir(client_cfg_dir_.c_str(), true);
 
 	for (const std::string &f : files) {
+		if (!is_str_hex(f))
+			continue;
+
 		try {
 			std::string full_path = client_cfg_dir_ + "/" + f;
 			json j = load_json_from_file(full_path.c_str());
