@@ -3,6 +3,7 @@
 #include <wgm/server.hpp>
 #include <wgm/ctx.hpp>
 #include <cstdio>
+#include <cstdlib>
 
 namespace wgm {
 
@@ -44,13 +45,21 @@ std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
 	uint64_t mss_ub = 65535;
 	uint64_t target_mss = MTU_ - 40;
 	size_t i = 0;
-	uint32_t mark = 7777;
+	uint32_t mark = 1;
 	
 	try {
 		json j = ctx_->get_wg_conn_by_local_interface_ip(LocalIP_);
+		char *endptr;
+		uint32_t tmp;
 
 		rt_table = j["local_interface_route_table_name"];
 		def_gateway = j["local_interface_ip_veth"];
+
+		tmp = strtoul(j["local_interface_route_table_id"].get<std::string>().c_str(), &endptr, 10);
+		if (*endptr != '\0')
+			throw std::runtime_error("Failed to convert local_interface_route_table_id to integer.");
+
+		mark = tmp + 22222;
 	} catch (const std::exception &e) {
 		throw std::runtime_error("Failed to get Wireguard connection file: " + std::string(e.what()));
 	}
@@ -70,7 +79,8 @@ std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
 		ret += "PostUp   = (" + ipt_path + " -t filter -D FORWARD     -j wgm_mssc_" + Location_ + " || " + true_path + ") >> /dev/null 2>&1;\n";
 		ret += "PostUp   = (" + ipt_path + " -t nat    -D POSTROUTING -j wgm_" + Location_ + " || " + true_path + ") >> /dev/null 2>&1;\n";
 		ret += "PostUp   = (" + ipt_path + " -t mangle -D PREROUTING  -j wgm_" + Location_ + " || " + true_path + ") >> /dev/null 2>&1;\n";
-		ret += "PostUp   = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + std::to_string(mark) + " || " + true_path + ") >> /dev/null 2>&1;\n";
+		// ret += "PostUp   = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + std::to_string(mark) + " || " + true_path + ") >> /dev/null 2>&1;\n";
+		ret += "PostUp   = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + rt_table + " || " + true_path + ") >> /dev/null 2>&1;\n";
 	}
 	ret += "\n";
 	ret += "PostUp   = (" + ipt_path + " -t filter -F wgm_mssc_" + Location_ + " || " + true_path + ") >> /dev/null 2>&1;\n";
@@ -120,8 +130,6 @@ std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
 	ret += "PostDown = (" + ipt_path + " -t mangle -X wgm_" + Location_ + " || " + true_path + ") >> /dev/null 2>&1;\n";
 	// ret += "PostDown = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + std::to_string(mark) + " || " + true_path + ") >> /dev/null 2>&1;\n";
 	ret += "PostDown = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + rt_table + " || " + true_path + ") >> /dev/null 2>&1;\n";
-	ret += "\n";
-
 	ret += "\n\n";
 	for (const auto &i : clients_) {
 		ret += "# " + i.first + "\n";
@@ -132,8 +140,6 @@ std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
 		ret += "\n";
 	}
 
-	printf("%s\n", ret.c_str());
-	exit(0);
 	return ret;
 }
 
