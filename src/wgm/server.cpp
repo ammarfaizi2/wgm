@@ -20,7 +20,7 @@ server::server(const json &j, ctx *ctx):
 	LocalIP_		= j["LocalIP"];
 	Socks5Port_		= j["Socks5Port"];
 	WireguardPort_		= j["WireguardPort"];
-	WireguardSubnet_ 	= j["WireguardSubnet"];
+	WireguardSubnet_	= j["WireguardSubnet"];
 	MTU_			= j["MTU"];
 	PrivateKey_		= j["PrivateKey"];
 	PublicKey_		= j["PublicKey"];

@@ -23,9 +23,14 @@ static int run_wgm(const char *cfg_file, const char *client_cfg_dir,
 
 int main(int argc, char *argv[])
 {
-	static const char *cfg_file = "./wg/config.json";
-	static const char *client_cfg_dir = "./wg/clients";
-	static const char *wg_conn_dir = "./wg_connections";
+	// static const char *cfg_file = "./wg/config.json";
+	// static const char *client_cfg_dir = "./wg/clients";
+	// static const char *wg_conn_dir = "./wg_connections";
+	// static const char *wg_dir = "/etc/wireguard";
+
+	static const char *cfg_file = "/tmp/wg/config.json";
+	static const char *client_cfg_dir = "/tmp/wg/clients";
+	static const char *wg_conn_dir = "/tmp/wg_connections";
 	static const char *wg_dir = "/etc/wireguard";
 
 	(void)argc;
@@ -55,6 +60,7 @@ std::string load_str_from_file(const char *file)
 		std::string ret(fsize, '\0');
 
 		if (fread(&ret[0], 1, fsize, f) != fsize) {
+			fclose(f);
 			snprintf(tmp, sizeof(tmp), "Failed to read file: '%s': %s\n", file, strerror(errno));
 			throw std::runtime_error(std::string(tmp));
 		}

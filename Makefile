@@ -5,9 +5,9 @@ CC        = gcc
 CXX       = g++
 INCLUDES  = -I./src/third_party/json/include -I./src
 DEPFLAGS  = -MT "$@" -MMD -MP -MF "$(@:%.o=%.d)"
-CFLAGS    = $(INCLUDES) -Wall -Wextra -Os -ggdb3 -D_GNU_SOURCE $(DEPFLAGS)
-CXXFLAGS  = $(INCLUDES) -Wall -Wextra -Os -ggdb3 -D_GNU_SOURCE $(DEPFLAGS)
-LDFLAGS   = -Os -ggdb3
+CFLAGS    = $(INCLUDES) -Wall -Wextra -Os -ggdb3 -D_GNU_SOURCE $(DEPFLAGS) -static
+CXXFLAGS  = $(INCLUDES) -Wall -Wextra -Os -ggdb3 -D_GNU_SOURCE $(DEPFLAGS) -static
+LDFLAGS   = -Os -ggdb3 -static
 LIBS      = -lpthread
 
 
