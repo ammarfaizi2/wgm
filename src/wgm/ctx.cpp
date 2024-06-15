@@ -102,9 +102,9 @@ inline void ctx::load_clients(void)
 				throw std::runtime_error("Invalid client config file: " + f + ": unknown exit location: " + c.LocationExit());				
 
 			it->second.add_client(c);
-			pr_debug("Loaded client config file: '%s'\n", f.c_str());
+			pr_debug("Loaded client config file: '%s': LocationExit: %s\n", f.c_str(), c.LocationExit().c_str());
 		} catch (const std::exception &e) {
-			pr_warn("Failed to load client config file: '%s': %s\n", f.c_str(), e.what());
+			pr_warn("Error: '%s': %s\n", f.c_str(), e.what());
 		}
 	}
 }
@@ -125,7 +125,7 @@ inline void ctx::wg_quick_up(const std::string &name)
 
 inline void ctx::wg_quick_down(const std::string &name)
 {
-	std::string cmd = wg_quick_path_ + " down " + name;
+	std::string cmd = wg_quick_path_ + " down " + name + " >> /dev/null 2>&1";
 	int err = system(cmd.c_str());
 
 	(void)err;
@@ -137,10 +137,13 @@ inline void ctx::put_wg_config_file_and_up(const server &s, bool first_run)
 	std::string cfg_path = wg_dir_ + "/" + cfg_name + ".conf";
 	std::string new_cfg, old_cfg;
 
-	if (s.num_clients() == 0) {
-		pr_debug("No clients for server: %s\n", s.Location().c_str());
+	if (first_run)
+		wg_quick_down(cfg_name);
 
+	if (s.num_clients() == 0) {
 		if (first_run)
+			pr_debug("No clients for server: %s\n", s.Location().c_str());
+		else
 			wg_quick_down(cfg_name);
 
 		return;
@@ -188,6 +191,7 @@ int ctx::run(void)
 	make_config_and_bring_up_all(true);
 
 	while (true) {
+		printf("Watching config files...\n");
 		sleep(15);
 		make_config_and_bring_up_all(false);
 	}
