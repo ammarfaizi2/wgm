@@ -11,12 +11,18 @@ namespace wgm {
 
 using json = nlohmann::json;
 
-ctx::ctx(const char *cfg_file, const char *client_cfg_dir,
-	 const char *wg_conn_dir, const char *wg_dir):
+ctx::ctx(std::string cfg_file, std::string client_cfg_dir,
+	 std::string wg_conn_dir, std::string wg_dir,
+	 std::string ipt_path, std::string ip2_path,
+	 std::string true_path, std::string wg_quick_path):
 	cfg_file_(cfg_file),
 	client_cfg_dir_(client_cfg_dir),
 	wg_conn_dir_(wg_conn_dir),
-	wg_dir_(wg_dir)
+	wg_dir_(wg_dir),
+	ipt_path_(ipt_path),
+	ip2_path_(ip2_path),
+	true_path_(true_path),
+	wg_quick_path_(wg_quick_path)
 {
 	load_all();
 }

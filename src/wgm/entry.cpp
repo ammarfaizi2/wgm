@@ -14,28 +14,71 @@
 
 #include <dirent.h>
 
-static int run_wgm(const char *cfg_file, const char *client_cfg_dir,
-		   const char *wg_conn_dir, const char *wg_dir)
+int main(void)
 {
-	wgm::ctx ctx(cfg_file, client_cfg_dir, wg_conn_dir, wg_dir);
-	return ctx.run();
-}
+#if 0
+	// Local testing only.
+	const char *cfg_file = "./wg/config.json";
+	const char *client_cfg_dir = "./wg/clients";
+	const char *wg_conn_dir = "./wg_connections";
+	const char *wg_dir = "/etc/wireguard";
+	const char *ipt_path = "/usr/sbin/iptables";
+	const char *ip2_path = "/usr/sbin/ip";
+	const char *true_path = "/usr/bin/true";
+	const char *wg_quick_path = "/usr/bin/wg-quick";
+#else
+	const char *cfg_file = "/tmp/wg/config.json";
+	const char *client_cfg_dir = "/tmp/wg/clients";
+	const char *wg_conn_dir = "/tmp/wg_connections";
+	const char *wg_dir = "/etc/wireguard";
+	const char *ipt_path = "/usr/sbin/iptables";
+	const char *ip2_path = "/usr/sbin/ip";
+	const char *true_path = "/usr/bin/true";
+	const char *wg_quick_path = "/usr/bin/wg-quick";
+#endif
+	const char *env;
 
-int main(int argc, char *argv[])
-{
-	// static const char *cfg_file = "./wg/config.json";
-	// static const char *client_cfg_dir = "./wg/clients";
-	// static const char *wg_conn_dir = "./wg_connections";
-	// static const char *wg_dir = "/etc/wireguard";
+	env = getenv("WGMD_CONFIG_FILE");
+	if (env)
+		cfg_file = env;
 
-	static const char *cfg_file = "/tmp/wg/config.json";
-	static const char *client_cfg_dir = "/tmp/wg/clients";
-	static const char *wg_conn_dir = "/tmp/wg_connections";
-	static const char *wg_dir = "/etc/wireguard";
+	env = getenv("WGMD_CLIENT_CFG_DIR");
+	if (env)
+		client_cfg_dir = env;
 
-	(void)argc;
-	(void)argv;
-	return run_wgm(cfg_file, client_cfg_dir, wg_conn_dir, wg_dir);
+	env = getenv("WGMD_WG_CONN_DIR");
+	if (env)
+		wg_conn_dir = env;
+
+	env = getenv("WGMD_WG_DIR");
+	if (env)
+		wg_dir = env;
+
+	env = getenv("WGMD_IPT_PATH");
+	if (env)
+		ipt_path = env;
+
+	env = getenv("WGMD_IP2_PATH");
+	if (env)
+		ip2_path = env;
+
+	env = getenv("WGMD_TRUE_PATH");
+	if (env)
+		true_path = env;
+
+	env = getenv("WGMD_WG_QUICK_PATH");
+	if (env)
+		wg_quick_path = env;
+
+	try {
+		wgm::ctx c(cfg_file, client_cfg_dir, wg_conn_dir, wg_dir,
+			   ipt_path, ip2_path, true_path, wg_quick_path);
+
+		return c.run();
+	} catch (const std::exception &e) {
+		fprintf(stderr, "Error: %s\n", e.what());
+		return 1;
+	}
 }
 
 namespace wgm {

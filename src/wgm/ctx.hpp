@@ -15,6 +15,10 @@ private:
 	std::string client_cfg_dir_;
 	std::string wg_conn_dir_;
 	std::string wg_dir_;
+	std::string ipt_path_;
+	std::string ip2_path_;
+	std::string true_path_;
+	std::string wg_quick_path_;
 
 	std::unordered_map<std::string, server> servers_;
 
@@ -25,8 +29,13 @@ private:
 public:
 	using json = nlohmann::json;
 
-	ctx(const char *cfg_file, const char *client_cfg_dir,
-	    const char *wg_conn_dir, const char *wg_dir);
+	ctx(std::string cfg_file, std::string client_cfg_dir,
+	    std::string wg_conn_dir, std::string wg_dir,
+	    std::string ipt_path = "/usr/sbin/iptables",
+	    std::string ip2_path = "/usr/sbin/ip",
+	    std::string true_path = "/usr/bin/true",
+	    std::string wg_quick_path = "/usr/bin/wg-quick"
+	);
 
 	~ctx(void);
 
