@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <cctype>
 
+#include <unistd.h>
+
 namespace wgm {
 
 using json = nlohmann::json;
@@ -107,54 +109,87 @@ inline void ctx::load_clients(void)
 	}
 }
 
-void ctx::load_all(void)
+inline void ctx::load_all(void)
 {
 	load_servers();
 	load_clients();
 }
 
-int ctx::run(void)
+inline void ctx::wg_quick_up(const std::string &name)
 {
+	std::string cmd = wg_quick_path_ + " up " + name;
+	int err = system(cmd.c_str());
 
+	(void)err;
+}
+
+inline void ctx::wg_quick_down(const std::string &name)
+{
+	std::string cmd = wg_quick_path_ + " down " + name;
+	int err = system(cmd.c_str());
+
+	(void)err;
+}
+
+inline void ctx::put_wg_config_file_and_up(const server &s, bool first_run)
+{
+	std::string cfg_name = "wgm-" + s.Location();
+	std::string cfg_path = wg_dir_ + "/" + cfg_name + ".conf";
+	std::string new_cfg, old_cfg;
+
+	if (s.num_clients() == 0) {
+		pr_debug("No clients for server: %s\n", s.Location().c_str());
+
+		if (first_run)
+			wg_quick_down(cfg_name);
+
+		return;
+	}
+
+	try {
+		old_cfg = load_str_from_file(cfg_path.c_str());
+	} catch (const std::exception &e) {
+		old_cfg = "";
+	}
+
+	new_cfg = s.gen_wg_config(ipt_path_, ip2_path_, true_path_);
+	if (old_cfg == new_cfg) {
+		if (first_run)
+			wg_quick_up(cfg_name);
+
+		return;
+	}
+
+	try {
+		wg_quick_down(cfg_name);
+		store_str_to_file(cfg_path.c_str(), new_cfg);
+		pr_debug("Updated server config: %s\n", s.Location().c_str());
+		wg_quick_up(cfg_name);
+	} catch (const std::exception &e) {
+		pr_warn("Failed to update server config: %s: %s\n", s.Location().c_str(), e.what());
+	}
+}
+
+inline void ctx::make_config_and_bring_up_all(bool first_boot)
+{
 	for (auto &i : servers_) {
 		server &s = i.second;
 
-		if (s.num_clients() == 0) {
-			pr_warn("No clients for server: %s\n", s.Location().c_str());
-			continue;
-		}
-
-		std::string cfg_name = "wgm-" + s.Location();
-		std::string cfg_path = wg_dir_ + "/" + cfg_name + ".conf";
-		std::string new_cfg = s.gen_wg_config();
-		std::string old_cfg = "";
-
 		try {
-			old_cfg = load_str_from_file(cfg_path.c_str());
+			put_wg_config_file_and_up(s, first_boot);
 		} catch (const std::exception &e) {
-			old_cfg = "";
+			pr_warn("Failed to handle server config: %s: %s\n", s.Location().c_str(), e.what());
 		}
+	}
+}
 
-		if (old_cfg == new_cfg) {
-			pr_debug("No changes for server: %s\n", s.Location().c_str());
-			continue;
-		}
+int ctx::run(void)
+{
+	make_config_and_bring_up_all(true);
 
-		try {
-			int err = 0;
-
-			store_str_to_file(cfg_path.c_str(), new_cfg);
-			pr_debug("Updated server config: %s\n", s.Location().c_str());
-
-			std::string dw_cmd = "/usr/bin/wg-quick down " + cfg_name;
-			std::string up_cmd = "/usr/bin/wg-quick up " + cfg_name;
-
-			err |= system(dw_cmd.c_str());
-			err |= system(up_cmd.c_str());
-			(void)err;
-		} catch (const std::exception &e) {
-			pr_warn("Failed to update server config: %s: %s\n", s.Location().c_str(), e.what());
-		}
+	while (true) {
+		sleep(15);
+		make_config_and_bring_up_all(false);
 	}
 
 	return 0;

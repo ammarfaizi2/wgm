@@ -42,7 +42,7 @@ public:
 		std::string ipt_path  = "/usr/sbin/iptables",
 		std::string ip2_path  = "/usr/sbin/ip",
 		std::string true_path = "/usr/bin/true"
-	);
+	) const;
 
 	inline size_t num_clients(void) const { return clients_.size(); }
 

@@ -25,6 +25,10 @@ private:
 	void load_all(void);
 	void load_servers(void);
 	void load_clients(void);
+	void make_config_and_bring_up_all(bool first_boot = false);
+	void wg_quick_up(const std::string &name);
+	void wg_quick_down(const std::string &name);
+	void put_wg_config_file_and_up(const server &s, bool first_run = false);
 
 public:
 	using json = nlohmann::json;

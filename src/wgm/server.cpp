@@ -35,7 +35,7 @@ void server::add_client(const client &c)
 }
 
 std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
-				  std::string true_path)
+				  std::string true_path) const
 {
 	std::string def_gateway;
 	std::string rt_table;
