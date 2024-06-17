@@ -99,10 +99,10 @@ inline void ctx::load_clients(void)
 
 			auto it = servers_.find(c.LocationExit());
 			if (it == servers_.end())
-				throw std::runtime_error("Invalid client config file: " + f + ": unknown exit location: " + c.LocationExit());				
+				throw std::runtime_error("Invalid client config file: " + f + ": unknown exit location: " + c.LocationExit());
 
 			it->second.add_client(c);
-			pr_debug("Loaded client config file: '%s': LocationExit: %s\n", f.c_str(), c.LocationExit().c_str());
+			// pr_debug("Loaded client config file: '%s': LocationExit: %s\n", f.c_str(), c.LocationExit().c_str());
 		} catch (const std::exception &e) {
 			pr_warn("Error: '%s': %s\n", f.c_str(), e.what());
 		}
@@ -115,20 +115,20 @@ inline void ctx::load_all(void)
 	load_clients();
 }
 
-inline void ctx::wg_quick_up(const std::string &name)
+inline int ctx::wg_quick_up(const std::string &name)
 {
 	std::string cmd = wg_quick_path_ + " up " + name;
 	int err = system(cmd.c_str());
 
-	(void)err;
+	return err;
 }
 
-inline void ctx::wg_quick_down(const std::string &name)
+inline int ctx::wg_quick_down(const std::string &name)
 {
 	std::string cmd = wg_quick_path_ + " down " + name + " >> /dev/null 2>&1";
 	int err = system(cmd.c_str());
 
-	(void)err;
+	return err;
 }
 
 inline void ctx::put_wg_config_file_and_up(const server &s, bool first_run)
@@ -157,14 +157,29 @@ inline void ctx::put_wg_config_file_and_up(const server &s, bool first_run)
 
 	new_cfg = s.gen_wg_config(ipt_path_, ip2_path_, true_path_);
 	if (old_cfg == new_cfg) {
-		if (first_run)
-			wg_quick_up(cfg_name);
+		if (first_run) {
+			uint16_t i = 0;
+			int err;
+
+			do {
+				err = wg_quick_up(cfg_name);
+				if (err != 0) {
+					wg_quick_down(cfg_name);
+					sleep(2);
+				}
+
+				if (i++ > 5)
+					pr_warn("Failed to bring up server config: %s\n", s.Location().c_str());
+
+			} while (err != 0);
+		}
 
 		return;
 	}
 
 	try {
 		wg_quick_down(cfg_name);
+		sleep(2);
 		store_str_to_file(cfg_path.c_str(), new_cfg);
 		pr_debug("Updated server config: %s\n", s.Location().c_str());
 		wg_quick_up(cfg_name);
@@ -175,6 +190,7 @@ inline void ctx::put_wg_config_file_and_up(const server &s, bool first_run)
 
 inline void ctx::make_config_and_bring_up_all(bool first_boot)
 {
+	load_all();
 	for (auto &i : servers_) {
 		server &s = i.second;
 
