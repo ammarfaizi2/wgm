@@ -13,8 +13,21 @@
 #include <stdexcept>
 
 #include <dirent.h>
+#include <getopt.h>
 
-int main(void)
+static struct option long_options[] = {
+	{"config-file",		required_argument, 0, 'c'},
+	{"client-cfg-dir",	required_argument, 0, 'd'},
+	{"wg-conn-dir",		required_argument, 0, 'w'},
+	{"wg-dir",		required_argument, 0, 'g'},
+	{"ipt-path",		required_argument, 0, 'i'},
+	{"ip2-path",		required_argument, 0, 'p'},
+	{"true-path",		required_argument, 0, 't'},
+	{"wg-quick-path",	required_argument, 0, 'q'},
+	{0, 0, 0, 0}
+};
+
+int main(int argc, char *argv[])
 {
 #if 0
 	// Local testing only.
@@ -69,6 +82,61 @@ int main(void)
 	env = getenv("WGMD_WG_QUICK_PATH");
 	if (env)
 		wg_quick_path = env;
+
+	int c;
+
+	while (1) {
+		int option_index = 0;
+
+		c = getopt_long(argc, argv, "c:d:w:g:i:p:t:q:", long_options, &option_index);
+		if (c == -1)
+			break;
+
+		switch (c) {
+		case 'c':
+			cfg_file = optarg;
+			break;
+		case 'd':
+			client_cfg_dir = optarg;
+			break;
+		case 'w':
+			wg_conn_dir = optarg;
+			break;
+		case 'g':
+			wg_dir = optarg;
+			break;
+		case 'i':
+			ipt_path = optarg;
+			break;
+		case 'p':
+			ip2_path = optarg;
+			break;
+		case 't':
+			true_path = optarg;
+			break;
+		case 'q':
+			wg_quick_path = optarg;
+			break;
+		default:
+			printf("Usage: %s [options]\n", "wgm");
+			printf("Options:\n");
+			printf("  --config-file, -c <file>     Set the config.json file (default: %s)\n", cfg_file);
+			printf("  --client-cfg-dir, -d <dir>   Set the client config directory (default: %s)\n", client_cfg_dir);
+			printf("  --wg-conn-dir, -w <dir>      Set the WireGuard connection directory (default: %s)\n", wg_conn_dir);
+			printf("  --wg-dir, -g <dir>           Set the WireGuard configuration directory (default: %s)\n", wg_dir);
+			printf("  --ipt-path, -i <path>        Set the iptables path (default: %s)\n", ipt_path);
+			printf("  --ip2-path, -p <path>        Set the ip path (default: %s)\n", ip2_path);
+			printf("  --true-path, -t <path>       Set the true path (default: %s)\n", true_path);
+			printf("  --wg-quick-path, -q <path>   Set the wg-quick path (default: %s)\n", wg_quick_path);
+			printf("\n");
+			/*
+			 * Run example:
+			 * ./wgmd --config-file /tmp/wg/config.json --client-cfg-dir /tmp/wg/clients --wg-conn-dir /tmp/wg_connections --wg-dir /etc/wireguard --ipt-path /usr/sbin/iptables --ip2-path /usr/sbin/ip --true-path /usr/bin/true --wg-quick-path /usr/bin/wg-quick
+			 */
+			return 1;
+		}
+	}
+
 
 	try {
 		wgm::ctx c(cfg_file, client_cfg_dir, wg_conn_dir, wg_dir,
