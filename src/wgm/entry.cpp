@@ -15,6 +15,8 @@
 #include <dirent.h>
 #include <getopt.h>
 
+#include <sys/file.h>
+
 static struct option long_options[] = {
 	{"config-file",		required_argument, 0, 'c'},
 	{"client-cfg-dir",	required_argument, 0, 'd'},
@@ -149,13 +151,31 @@ int main(int argc, char *argv[])
 	}
 
 
+	FILE *lock_file = NULL;
+
 	try {
+		lock_file = fopen(atomic_run_file, "ab");
+		if (!lock_file) {
+			fprintf(stderr, "Failed to open atomic run file: '%s': %s\n", atomic_run_file, strerror(errno));
+			return 1;
+		}
+
+		if (flock(fileno(lock_file), LOCK_EX | LOCK_NB) < 0) {
+			fprintf(stderr, "Another wgmd is already running using a lock file: '%s', exiting...\n", atomic_run_file);
+			fclose(lock_file);
+			return 1;
+		}
+
 		wgm::ctx c(cfg_file, client_cfg_dir, wg_conn_dir, wg_dir,
 			   ipt_path, ip2_path, true_path, wg_quick_path);
 
+		fclose(lock_file);
 		return c.run();
 	} catch (const std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
+		if (lock_file)
+			fclose(lock_file);
+
 		return 1;
 	}
 }
