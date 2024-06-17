@@ -111,7 +111,18 @@ inline void ctx::load_clients(void)
 
 inline void ctx::load_all(void)
 {
-	load_servers();
+	uint32_t i = 0;
+
+	while (true) {
+		try {
+			load_servers();
+		} catch (const std::exception &e) {
+			pr_warn("[retry_count=%05u] Failed to load servers: %s", ++i, e.what());
+			sleep(2);
+			continue;
+		}
+	}
+
 	load_clients();
 }
 

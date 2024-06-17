@@ -24,6 +24,7 @@ static struct option long_options[] = {
 	{"ip2-path",		required_argument, 0, 'p'},
 	{"true-path",		required_argument, 0, 't'},
 	{"wg-quick-path",	required_argument, 0, 'q'},
+	{"atomic-run-file",	required_argument, 0, 'a'},
 	{0, 0, 0, 0}
 };
 
@@ -39,6 +40,7 @@ int main(int argc, char *argv[])
 	const char *ip2_path = "/usr/sbin/ip";
 	const char *true_path = "/usr/bin/true";
 	const char *wg_quick_path = "/usr/bin/wg-quick";
+	const char *atomic_run_file = "/tmp/wgm_run.lock";
 #else
 	const char *cfg_file = "/tmp/wg/config.json";
 	const char *client_cfg_dir = "/tmp/wg/clients";
@@ -48,6 +50,7 @@ int main(int argc, char *argv[])
 	const char *ip2_path = "/usr/sbin/ip";
 	const char *true_path = "/usr/bin/true";
 	const char *wg_quick_path = "/usr/bin/wg-quick";
+	const char *atomic_run_file = "/tmp/wgm_run.lock";
 #endif
 	const char *env;
 
@@ -83,12 +86,16 @@ int main(int argc, char *argv[])
 	if (env)
 		wg_quick_path = env;
 
+	env = getenv("WGMD_ATOMIC_RUN");
+	if (env)
+		atomic_run_file = env;
+
 	int c;
 
 	while (1) {
 		int option_index = 0;
 
-		c = getopt_long(argc, argv, "c:d:w:g:i:p:t:q:", long_options, &option_index);
+		c = getopt_long(argc, argv, "c:d:w:g:i:p:t:q:a:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -117,6 +124,9 @@ int main(int argc, char *argv[])
 		case 'q':
 			wg_quick_path = optarg;
 			break;
+		case 'a':
+			atomic_run_file = optarg;
+			break;
 		default:
 			printf("Usage: %s [options]\n", "wgm");
 			printf("Options:\n");
@@ -128,6 +138,7 @@ int main(int argc, char *argv[])
 			printf("  --ip2-path, -p <path>        Set the ip path (default: %s)\n", ip2_path);
 			printf("  --true-path, -t <path>       Set the true path (default: %s)\n", true_path);
 			printf("  --wg-quick-path, -q <path>   Set the wg-quick path (default: %s)\n", wg_quick_path);
+			printf("  --atomic-run-file, -a <file> Set the atomic run file to avoid process duplication (default: %s)\n", atomic_run_file);
 			printf("\n");
 			/*
 			 * Run example:
