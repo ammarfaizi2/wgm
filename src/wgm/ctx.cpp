@@ -26,7 +26,6 @@ ctx::ctx(std::string cfg_file, std::string client_cfg_dir,
 	true_path_(true_path),
 	wg_quick_path_(wg_quick_path)
 {
-	load_all();
 }
 
 ctx::~ctx(void) = default;
@@ -116,6 +115,7 @@ inline void ctx::load_all(void)
 	while (true) {
 		try {
 			load_servers();
+			break;
 		} catch (const std::exception &e) {
 			pr_warn("[retry_count=%05u] Failed to load servers: %s", ++i, e.what());
 			sleep(2);

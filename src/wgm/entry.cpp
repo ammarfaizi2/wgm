@@ -298,4 +298,29 @@ void pr_debug(const char *fmt, ...)
 	va_end(ap);
 }
 
+std::vector<std::string> str_explode(const std::string &str, const std::string &delim,
+				     unsigned int limit)
+{
+	std::vector<std::string> ret;
+	size_t pos = 0;
+	size_t start = 0;
+	size_t len = str.size();
+	size_t delim_len = delim.size();
+	unsigned int count = 0;
+
+	while (pos < len) {
+		pos = str.find(delim, start);
+		if (pos == std::string::npos)
+			pos = len;
+
+		ret.push_back(str.substr(start, pos - start));
+		start = pos + delim_len;
+
+		if (limit && ++count >= limit)
+			break;
+	}
+
+	return ret;
+}
+
 } /* namespace wgm */

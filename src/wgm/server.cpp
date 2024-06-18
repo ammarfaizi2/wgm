@@ -2,6 +2,7 @@
 
 #include <wgm/server.hpp>
 #include <wgm/ctx.hpp>
+#include <wgm/entry.hpp>
 #include <cstdio>
 #include <cstdlib>
 
@@ -132,11 +133,14 @@ std::string server::gen_wg_config(std::string ipt_path, std::string ip2_path,
 	ret += "PostDown = (" + ip2_path + " rule del fwmark " + std::to_string(mark) + " table " + rt_table + " || " + true_path + ") >> /dev/null 2>&1;\n";
 	ret += "\n\n";
 	for (const auto &i : clients_) {
+		std::vector<std::string> tmp = str_explode(i.second.LocalIP(), "/", 2);
+		std::string peer_ip = tmp[0];
+
 		ret += "# " + i.first + "\n";
 		ret += "[Peer]\n";
 		ret += "PresharedKey = " + PresharedKey_ + "\n";
 		ret += "PublicKey = " + i.second.PublicKey() + "\n";
-		ret += "AllowedIPs = " + i.second.LocalIP() + "/32\n";
+		ret += "AllowedIPs = " + peer_ip + "/32\n";
 		ret += "\n";
 	}
 
