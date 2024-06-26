@@ -154,6 +154,8 @@ int main(int argc, char *argv[])
 	FILE *lock_file = NULL;
 
 	try {
+		int ret;
+
 		lock_file = fopen(atomic_run_file, "ab");
 		if (!lock_file) {
 			fprintf(stderr, "Failed to open atomic run file: '%s': %s\n", atomic_run_file, strerror(errno));
@@ -169,8 +171,9 @@ int main(int argc, char *argv[])
 		wgm::ctx c(cfg_file, client_cfg_dir, wg_conn_dir, wg_dir,
 			   ipt_path, ip2_path, true_path, wg_quick_path);
 
+		ret = c.run();
 		fclose(lock_file);
-		return c.run();
+		return ret;
 	} catch (const std::exception &e) {
 		fprintf(stderr, "Error: %s\n", e.what());
 		if (lock_file)
