@@ -24,3 +24,4 @@ client_config::client_config(const json &j)
 client_config::~client_config(void) = default;
 
 } /* namespace wgm */
+
